@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+
+<html lang="pt-br">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Vôlei de Cabeça</title>
+
+    <style>
+
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #222; color: white; font-family: sans-serif; }
+
+        canvas { border: 4px solid #fff; background-color: #87CEEB; /* Cor do céu */ }
+
+        #ui { position: absolute; top: 20px; text-align: center; width: 100%; }
+
+    </style>
+
+</head>
+
+<body>
+
+
+
+    <div id="ui">
+
+        <h1>Placar: <span id="playerScore">0</span> x <span id="cpuScore">0</span></h1>
+
+        <label>Dificuldade:</label>
+
+        <select id="difficulty">
+
+            <option value="easy">Fácil</option>
+
+            <option value="medium" selected>Médio</option>
+
+            <option value="hard">Difícil</option>
+
+        </select>
+
+    </div>
+
+
+
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+
+
+    <script src="game.js"></script>
+
+</body>
+
+</html>
