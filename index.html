@@ -1,55 +1,186 @@
 <!DOCTYPE html>
-
 <html lang="pt-br">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <title>Vôlei de Cabeça</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasma Vôlei</title>
     <style>
+        body { 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background-color: #1a1a1a; 
+            color: white; 
+            font-family: Arial, sans-serif; 
+            user-select: none;
+        }
 
-        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #222; color: white; font-family: sans-serif; }
+        /* Container que segura o Canvas e os Menus centralizados */
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+        }
 
-        canvas { border: 4px solid #fff; background-color: #87CEEB; /* Cor do céu */ }
+        canvas { 
+            border: 4px solid #fff; 
+            background-color: #87CEEB; /* Cor do céu */
+            display: block;
+        }
 
-        #ui { position: absolute; top: 20px; text-align: center; width: 100%; }
+        /* Placar no topo */
+        #ui { 
+            position: absolute; 
+            top: 15px; 
+            width: 100%; 
+            text-align: center; 
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
 
+        /* Estilo para Telas/Overlays (Menu e Pausa) */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            border: 4px solid #fff;
+            box-sizing: border-box;
+        }
+
+        .overlay h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #FFDC00;
+        }
+
+        .overlay label {
+            font-size: 18px;
+        }
+
+        .overlay select, .overlay button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .overlay button {
+            background-color: #2ECC40;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+
+        .overlay button:hover {
+            background-color: #01FF70;
+            color: black;
+            transform: scale(1.05);
+        }
+
+        /* Classe para esconder elementos facilmente */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Controles Touch para Mobile */
+        #touchControls {
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            margin-top: 15px;
+        }
+
+        .touch-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-touch {
+            width: 70px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        .btn-touch:active {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
     </style>
-
 </head>
-
 <body>
 
+    <div id="gameContainer">
+        <!-- O Canvas do Jogo -->
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
 
+        <!-- Placar -->
+        <div id="ui">
+            Placar: <span id="playerScore">0</span> x <span id="cpuScore">0</span>
+        </div>
 
-    <div id="ui">
+        <!-- Tela do Menu Inicial -->
+        <div id="startScreen" class="overlay">
+            <h1>FANTASMA VÔLEI</h1>
+            
+            <label for="gender">Personagem:</label>
+            <select id="gender">
+                <option value="male">Masculino</option>
+                <option value="female">Feminino</option>
+            </select>
 
-        <h1>Placar: <span id="playerScore">0</span> x <span id="cpuScore">0</span></h1>
+            <label for="difficulty">Dificuldade:</label>
+            <select id="difficulty">
+                <option value="easy">Fácil</option>
+                <option value="medium" selected>Médio</option>
+                <option value="hard">Difícil</option>
+            </select>
 
-        <label>Dificuldade:</label>
+            <button id="startBtn">JOGAR</button>
+        </div>
 
-        <select id="difficulty">
-
-            <option value="easy">Fácil</option>
-
-            <option value="medium" selected>Médio</option>
-
-            <option value="hard">Difícil</option>
-
-        </select>
-
+        <!-- Tela de Pausa -->
+        <div id="pauseScreen" class="overlay hidden">
+            <h1>PAUSADO</h1>
+            <p>Aperte "P" ou clique abaixo para continuar</p>
+            <button id="resumeBtn">CONTINUAR</button>
+        </div>
     </div>
 
-
-
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-
-
+    <!-- Controles de Toque para Celular -->
+    <div id="touchControls">
+        <div class="touch-group">
+            <button class="btn-touch" id="btnLeft">◄</button>
+            <button class="btn-touch" id="btnRight">►</button>
+        </div>
+        <div class="touch-group">
+            <button class="btn-touch" id="btnJump">▲</button>
+        </div>
+    </div>
 
     <script src="game.js"></script>
-
 </body>
-
 </html>
