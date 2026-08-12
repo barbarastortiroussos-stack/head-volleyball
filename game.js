@@ -4,7 +4,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // Configurações do Jogo
-    const gravity = 0.4;
+    const gravity = 0.45;
     let playerScore = 0;
     let cpuScore = 0;
 
@@ -12,7 +12,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ball = {
         x: canvas.width / 2,
         y: 100,
-        radius: 15,
+        radius: 12,
         vx: 2,
         vy: 0,
         bounce: 0.75,
@@ -29,13 +29,14 @@ window.addEventListener('DOMContentLoaded', () => {
         x: 150,
         y: 480,
         width: 40,
-        height: 70,
+        height: 60,
         vx: 0,
         vy: 0,
         speed: 5,
-        jumpPower: -10,
+        jumpPower: -11,
         isGrounded: false,
-        color: '#FF4136' // Vermelho
+        color: '#FF4136', // Vermelho
+        isFemale: false
     };
 
     // NPC / CPU (Lado Direito)
@@ -43,13 +44,14 @@ window.addEventListener('DOMContentLoaded', () => {
         x: 610,
         y: 480,
         width: 40,
-        height: 70,
+        height: 60,
         vx: 0,
         vy: 0,
         speed: 4,
-        jumpPower: -10,
+        jumpPower: -11,
         isGrounded: false,
-        color: '#0074D9' // Azul
+        color: '#0074D9', // Azul
+        isFemale: false
     };
 
     // A Rede (No centro)
@@ -66,9 +68,54 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('keydown', e => keys[e.key] = true);
     window.addEventListener('keyup', e => keys[e.key] = false);
 
+    // --- DESENHO DO FANTASMA (PAC-MAN STYLE) ---
+    function drawGhost(x, y, width, height, color, isFemale) {
+        ctx.fillStyle = color;
+
+        // 1. Corpo do Fantasma
+        ctx.beginPath();
+        ctx.arc(x + width / 2, y + width / 2, width / 2, Math.PI, 0, false);
+        ctx.lineTo(x + width, y + height);
+        
+        // Ondas da parte de baixo
+        let feet = 3;
+        let footWidth = width / feet;
+        for (let i = 0; i < feet; i++) {
+            ctx.lineTo(x + width - (i * footWidth) - (footWidth / 2), y + height - 6);
+            ctx.lineTo(x + width - ((i + 1) * footWidth), y + height);
+        }
+        
+        ctx.lineTo(x, y + width / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // 2. Olhos
+        let eyeOffset = width * 0.25;
+        let eyeRadius = width * 0.15;
+        let pupilRadius = width * 0.07;
+
+        // Olho Esquerdo (Branco)
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(x + eyeOffset, y + height * 0.35, eyeRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Olho Direito (Branco)
+        ctx.beginPath();
+        ctx.arc(x + width - eyeOffset, y + height * 0.35, eyeRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pupilas
+        ctx.fillStyle = "#111100";
+        ctx.beginPath();
+        ctx.arc(x + eyeOffset, y + height * 0.35, pupilRadius, 0, Math.PI * 2);
+        ctx.arc(x + width - eyeOffset, y + height * 0.35, pupilRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
     // --- ATUALIZAÇÃO DA LÓGICA (UPDATE) ---
     function update() {
-        // 1. Movimento do Jogador (Teclas A, D e W)
+        // 1. Movimento do Jogador
         if (keys['a'] || keys['A'] || keys['ArrowLeft']) player.vx = -player.speed;
         else if (keys['d'] || keys['D'] || keys['ArrowRight']) player.vx = player.speed;
         else player.vx = 0;
@@ -86,26 +133,28 @@ window.addEventListener('DOMContentLoaded', () => {
         // Limites de chão e rede para o Jogador
         if (player.y + player.height >= 580) {
             player.y = 580 - player.height;
+            player.vy = 0;
             player.isGrounded = true;
         }
         if (player.x < 0) player.x = 0;
         if (player.x + player.width > net.x) player.x = net.x - player.width;
 
-        // 2. Inteligência Artificial Básica do NPC
+        // 2. Inteligência Artificial do NPC
         const diffElement = document.getElementById('difficulty');
         const diff = diffElement ? diffElement.value : 'medium';
         let cpuSpeed = diff === 'easy' ? 3 : (diff === 'medium' ? 4.5 : 6);
         
-        // NPC segue a bola quando ela passa para o lado dele
         if (ball.x > net.x) {
-            if (ball.x < cpu.x + 10) cpu.x -= cpuSpeed;
-            else if (ball.x > cpu.x + cpu.width - 10) cpu.x += cpuSpeed;
+            if (ball.x < cpu.x + 10) cpu.vx = -cpuSpeed;
+            else if (ball.x > cpu.x + cpu.width - 10) cpu.vx = cpuSpeed;
+            else cpu.vx = 0;
 
-            // NPC pula para acertar a bola
             if (ball.y < cpu.y && ball.x > cpu.x - 30 && cpu.isGrounded) {
                 cpu.vy = cpu.jumpPower;
                 cpu.isGrounded = false;
             }
+        } else {
+            cpu.vx = 0;
         }
 
         // Aplica física no NPC
@@ -115,6 +164,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (cpu.y + cpu.height >= 580) {
             cpu.y = 580 - cpu.height;
+            cpu.vy = 0;
             cpu.isGrounded = true;
         }
         if (cpu.x < net.x + net.width) cpu.x = net.x + net.width;
@@ -123,14 +173,14 @@ window.addEventListener('DOMContentLoaded', () => {
         // 3. Física da Bola
         ball.x += ball.vx;
         ball.y += ball.vy;
-        ball.vy += gravity * 0.5; // Bola mais leve
+        ball.vy += gravity * 0.8;
 
-        // Bate nas paredes laterais
+        // Paredes laterais
         if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
             ball.vx *= -1;
         }
 
-        // Colisão da Bola com o Cabeção do Jogador
+        // Colisões com Jogador e CPU
         checkHeadCollision(player);
         checkHeadCollision(cpu);
 
@@ -154,24 +204,23 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Detecção de Cabeçada
+    // Detecção de Impacto com os Fantasminhas
     function checkHeadCollision(p) {
         let headX = p.x + p.width / 2;
-        let headY = p.y + 15; // Topo do corpo (A Cabeça)
+        let headY = p.y + p.height / 3;
         
         let dx = ball.x - headX;
         let dy = ball.y - headY;
         let distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < ball.radius + 20) {
-            ball.vy = -8; // Impulso para cima
-            ball.vx = dx * 0.4; // Direção dependendo de onde bateu na cabeça
+        if (distance < ball.radius + (p.width / 2)) {
+            ball.vy = -8;
+            ball.vx = dx * 0.3;
         }
     }
 
     // --- DESENHO NA TELA (RENDER) ---
     function draw() {
-        // Limpa a tela
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Chão da quadra
@@ -182,19 +231,11 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = net.color;
         ctx.fillRect(net.x, net.y, net.width, net.height);
 
-        // Jogador (Corpo + Cabeça destacada)
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y + 20, player.width, player.height - 20);
-        ctx.beginPath();
-        ctx.arc(player.x + player.width / 2, player.y + 15, 20, 0, Math.PI * 2);
-        ctx.fill();
+        // Desenha o Jogador (Fantasma Vermelho)
+        drawGhost(player.x, player.y, player.width, player.height, player.color, player.isFemale);
 
-        // NPC (Corpo + Cabeça destacada)
-        ctx.fillStyle = cpu.color;
-        ctx.fillRect(cpu.x, cpu.y + 20, cpu.width, cpu.height - 20);
-        ctx.beginPath();
-        ctx.arc(cpu.x + cpu.width / 2, cpu.y + 15, 20, 0, Math.PI * 2);
-        ctx.fill();
+        // Desenha a CPU (Fantasma Azul)
+        drawGhost(cpu.x, cpu.y, cpu.width, cpu.height, cpu.color, cpu.isFemale);
 
         // Bola de Vôlei
         ctx.fillStyle = '#FFDC00';
