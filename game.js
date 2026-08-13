@@ -3,6 +3,20 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
+    // 1. ESTADO DO JOGO (Começa parado esperando o clique!)
+    let jogoRodando = false;
+
+    // Elementos do Menu e Botão no HTML
+    const botaoJogar = document.getElementById('btn-jogar'); // Ajuste o ID se o seu for diferente
+    const telaMenu = document.getElementById('menu');         // Ajuste o ID se o seu for diferente
+
+    if (botaoJogar) {
+        botaoJogar.addEventListener('click', () => {
+            jogoRodando = true; // Ativa a lógica do jogo!
+            if (telaMenu) telaMenu.style.display = 'none'; // Some com o menu
+        });
+    }
+
     // Configurações do Jogo
     const gravity = 0.45;
     let playerScore = 0;
@@ -248,34 +262,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Loop Principal do Jogo
     function gameLoop() {
-        update();
-        draw();
+        if (jogoRodando) {
+            update(); // Só calcula a física se o jogo começou
+        }
+        draw(); // Desenha a tela (assim o cenário e os fantasma ficam visíveis no menu)
         requestAnimationFrame(gameLoop);
     }
 
     gameLoop();
-});
-function loopDoJogo() {
-  if (jogoRodando) {
-    // 1. Apaga tudo que foi desenhado no frame anterior
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 2. Atualiza as posições (física, teclas pressionadas, colisões)
-    atualizarPosicoes(); // Ou o nome da sua função de mover
-
-    // 3. Desenha os elementos atualizados na tela
-    desenharCenario();
-    desenharJogadores();
-    desenharBola();
-  }
-
-  // Pede para o navegador chamar essa função de novo no próximo frame (animação fluida)
-  requestAnimationFrame(loopDoJogo);
-}
-const botaoJogar = document.getElementById('seu-botao-jogar');
-const telaMenu = document.getElementById('sua-div-do-menu');
-
-botaoJogar.addEventListener('click', function() {
-  jogoRodando = true; // Libera a lógica do jogo!
-  telaMenu.style.display = 'none'; // Some com o menu da tela
 });
