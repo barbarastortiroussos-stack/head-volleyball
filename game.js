@@ -3,271 +3,398 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    // 1. ESTADO DO JOGO (Começa parado esperando o clique!)
-    let jogoRodando = false;
+    // --- ELEMENTOS DA INTERFACE (HTML) ---
+    const startScreen = document.getElementById('startScreen');
+    const pauseScreen = document.getElementById('pauseScreen');
+    const startBtn = document.getElementById('startBtn');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const genderSelect = document.getElementById('gender');
+    const difficultySelect = document.getElementById('difficulty');
+    const playerScoreEl = document.getElementById('playerScore');
+    const cpuScoreEl = document.getElementById('cpuScore');
 
-    // Elementos do Menu e Botão no HTML
-    const botaoJogar = document.getElementById('btn-jogar'); // Ajuste o ID se o seu for diferente
-    const telaMenu = document.getElementById('menu');         // Ajuste o ID se o seu for diferente
+    // Controles Touch
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const btnJump = document.getElementById('btnJump');
 
-    if (botaoJogar) {
-        botaoJogar.addEventListener('click', () => {
-            jogoRodando = true; // Ativa a lógica do jogo!
-            if (telaMenu) telaMenu.style.display = 'none'; // Some com o menu
-        });
-    }
-
-    // Configurações do Jogo
-    const gravity = 0.45;
+    // --- ESTADOS DO JOGO ---
+    let gameRunning = false;
+    let isPaused = false;
     let playerScore = 0;
     let cpuScore = 0;
 
-    // Objeto da Bola
-    const ball = {
-        x: canvas.width / 2,
-        y: 100,
-        radius: 12,
-        vx: 2,
-        vy: 0,
-        bounce: 0.75,
-        reset() {
-            this.x = canvas.width / 2;
-            this.y = 100;
-            this.vx = (Math.random() - 0.5) * 4;
-            this.vy = 0;
-        }
-    };
-
-    // Jogador (Lado Esquerdo)
-    const player = {
-        x: 150,
-        y: 480,
-        width: 40,
-        height: 60,
-        vx: 0,
-        vy: 0,
-        speed: 5,
-        jumpPower: -11,
-        isGrounded: false,
-        color: '#FF4136', // Vermelho
-        isFemale: false
-    };
-
-    // NPC / CPU (Lado Direito)
-    const cpu = {
-        x: 610,
-        y: 480,
-        width: 40,
-        height: 60,
-        vx: 0,
-        vy: 0,
-        speed: 4,
-        jumpPower: -11,
-        isGrounded: false,
-        color: '#0074D9', // Azul
-        isFemale: false
-    };
-
-    // A Rede (No centro)
+    // --- CONFIGURAÇÃO DA REDE E CAMPO ---
+    const groundY = 520;
     const net = {
         x: canvas.width / 2 - 5,
-        y: 400,
+        y: 380,
         width: 10,
-        height: 200,
-        color: '#FFFFFF'
+        height: 140
     };
 
-    // Captura de Teclas do Jogador
-    const keys = {};
-    window.addEventListener('keydown', e => keys[e.key] = true);
-    window.addEventListener('keyup', e => keys[e.key] = false);
+    // --- TECLAS E CONTROLES ---
+    const keys = {
+        left: false,
+        right: false,
+        up: false
+    };
 
-    // --- DESENHO DO FANTASMA (PAC-MAN STYLE) ---
-    function drawGhost(x, y, width, height, color, isFemale) {
-        ctx.fillStyle = color;
+    // --- FANTASMA (JOGADOR) ---
+    const player = {
+        x: 150,
+        y: groundY - 50,
+        radius: 30,
+        speed: 6,
+        vx: 0,
+        vy: 0,
+        jumping: false,
+        color: '#FFFFFF', // Cor base do fantasma
+        hairColor: '#000000',
+        gender: 'male'
+    };
 
-        // 1. Corpo do Fantasma
-        ctx.beginPath();
-        ctx.arc(x + width / 2, y + width / 2, width / 2, Math.PI, 0, false);
-        ctx.lineTo(x + width, y + height);
-        
-        // Ondas da parte de baixo
-        let feet = 3;
-        let footWidth = width / feet;
-        for (let i = 0; i < feet; i++) {
-            ctx.lineTo(x + width - (i * footWidth) - (footWidth / 2), y + height - 6);
-            ctx.lineTo(x + width - ((i + 1) * footWidth), y + height);
+    // --- FANTASMA (CPU) ---
+    const cpu = {
+        x: 650,
+        y: groundY - 50,
+        radius: 30,
+        speed: 4,
+        vx: 0,
+        vy: 0,
+        jumping: false,
+        color: '#FF6B6B',
+        difficulty: 'medium'
+    };
+
+    // --- BOLA DE VÔLEI ---
+    const ball = {
+        x: 200,
+        y: 200,
+        radius: 16,
+        vx: 0,
+        vy: 0,
+        gravity: 0.35,
+        bounce: 0.75
+    };
+
+    // --- DIFICULDADES DA CPU ---
+    const difficultySettings = {
+        easy: { speed: 3.5, jumpPower: -9, reaction: 0.04 },
+        medium: { speed: 5.0, jumpPower: -11, reaction: 0.08 },
+        hard: { speed: 6.5, jumpPower: -12.5, reaction: 0.15 }
+    };
+
+    // --- CONTROLES DE TECLADO ---
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+        if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') {
+            if (!keys.up && !player.jumping && gameRunning && !isPaused) {
+                player.vy = -12;
+                player.jumping = true;
+            }
+            keys.up = true;
         }
+        if (e.code === 'KeyP') togglePause();
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+        if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') keys.up = false;
+    });
+
+    // --- CONTROLES TOUCH (MOBILE) ---
+    const setupTouchBtn = (element, keyProp) => {
+        if (!element) return;
+        const start = (e) => { e.preventDefault(); keys[keyProp] = true; };
+        const end = (e) => { e.preventDefault(); keys[keyProp] = false; };
+        element.addEventListener('touchstart', start);
+        element.addEventListener('touchend', end);
+        element.addEventListener('mousedown', start);
+        element.addEventListener('mouseup', end);
+    };
+
+    setupTouchBtn(btnLeft, 'left');
+    setupTouchBtn(btnRight, 'right');
+
+    if (btnJump) {
+        const doJump = (e) => {
+            e.preventDefault();
+            if (!player.jumping && gameRunning && !isPaused) {
+                player.vy = -12;
+                player.jumping = true;
+            }
+        };
+        btnJump.addEventListener('touchstart', doJump);
+        btnJump.addEventListener('mousedown', doJump);
+    }
+
+    // --- REINICIAR PONTO ---
+    function resetServe(server = 'player') {
+        player.x = 150;
+        player.y = groundY - player.radius;
+        player.vx = 0;
+        player.vy = 0;
+
+        cpu.x = 650;
+        cpu.y = groundY - cpu.radius;
+        cpu.vx = 0;
+        cpu.vy = 0;
+
+        if (server === 'player') {
+            ball.x = 200;
+            ball.y = 200;
+        } else {
+            ball.x = 600;
+            ball.y = 200;
+        }
+        ball.vx = 0;
+        ball.vy = 0;
+    }
+
+    // --- PAUSA ---
+    function togglePause() {
+        if (!gameRunning) return;
+        isPaused = !isPaused;
+        if (isPaused) {
+            pauseScreen.classList.remove('hidden');
+        } else {
+            pauseScreen.classList.add('hidden');
+        }
+    }
+
+    if (resumeBtn) resumeBtn.addEventListener('click', togglePause);
+
+    // --- INICIAR O JOGO ---
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            // Aplica opções escolhidas no menu
+            player.gender = genderSelect ? genderSelect.value : 'male';
+            cpu.difficulty = difficultySelect ? difficultySelect.value : 'medium';
+
+            playerScore = 0;
+            cpuScore = 0;
+            if (playerScoreEl) playerScoreEl.textContent = playerScore;
+            if (cpuScoreEl) cpuScoreEl.textContent = cpuScore;
+
+            startScreen.classList.add('hidden');
+            gameRunning = true;
+            isPaused = false;
+
+            resetServe('player');
+        });
+    }
+
+    // --- LÓGICA DE ATUALIZAÇÃO (PHYSICS & IA) ---
+    function update() {
+        if (!gameRunning || isPaused) return;
+
+        // Movimento do Jogador
+        if (keys.left) player.vx = -player.speed;
+        else if (keys.right) player.vx = player.speed;
+        else player.vx = 0;
+
+        player.x += player.vx;
+        player.vy += 0.5; // Gravidade
+        player.y += player.vy;
+
+        // Limites do Jogador (Lado Esquerdo)
+        if (player.x - player.radius < 0) player.x = player.radius;
+        if (player.x + player.radius > net.x) player.x = net.x - player.radius;
+        if (player.y + player.radius >= groundY) {
+            player.y = groundY - player.radius;
+            player.vy = 0;
+            player.jumping = false;
+        }
+
+        // Lógica da CPU (Inteligência Artificial)
+        const config = difficultySettings[cpu.difficulty] || difficultySettings.medium;
+        const targetX = ball.x > net.x + net.width ? ball.x : 650;
+
+        if (cpu.x < targetX - 10) cpu.vx = config.speed;
+        else if (cpu.x > targetX + 10) cpu.vx = -config.speed;
+        else cpu.vx = 0;
+
+        // Pulo da CPU
+        if (ball.x > net.x + net.width && ball.x < 750 && ball.y < 350 && !cpu.jumping) {
+            if (Math.random() < config.reaction) {
+                cpu.vy = config.jumpPower;
+                cpu.jumping = true;
+            }
+        }
+
+        cpu.x += cpu.vx;
+        cpu.vy += 0.5;
+        cpu.y += cpu.vy;
+
+        // Limites da CPU (Lado Direito)
+        if (cpu.x - cpu.radius < net.x + net.width) cpu.x = net.x + net.width + cpu.radius;
+        if (cpu.x + cpu.radius > canvas.width) cpu.x = canvas.width - cpu.radius;
+        if (cpu.y + cpu.radius >= groundY) {
+            cpu.y = groundY - cpu.radius;
+            cpu.vy = 0;
+            cpu.jumping = false;
+        }
+
+        // Física da Bola
+        ball.vy += ball.gravity;
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+
+        // Colisão da Bola com Paredes e Teto
+        if (ball.x - ball.radius < 0) {
+            ball.x = ball.radius;
+            ball.vx *= -ball.bounce;
+        }
+        if (ball.x + ball.radius > canvas.width) {
+            ball.x = canvas.width - ball.radius;
+            ball.vx *= -ball.bounce;
+        }
+        if (ball.y - ball.radius < 0) {
+            ball.y = ball.radius;
+            ball.vy *= -1;
+        }
+
+        // Colisão da Bola com a Rede
+        if (ball.x + ball.radius > net.x && ball.x - ball.radius < net.x + net.width) {
+            if (ball.y + ball.radius > net.y) {
+                if (ball.x < net.x + net.width / 2) {
+                    ball.x = net.x - ball.radius;
+                    ball.vx = -Math.abs(ball.vx) * 0.8;
+                } else {
+                    ball.x = net.x + net.width + ball.radius;
+                    ball.vx = Math.abs(ball.vx) * 0.8;
+                }
+            }
+        }
+
+        // Colisão da Bola com Jogador / CPU
+        checkBallCollision(player);
+        checkBallCollision(cpu);
+
+        // Pontuação (Bola toca o chão)
+        if (ball.y + ball.radius >= groundY) {
+            if (ball.x < net.x + net.width / 2) {
+                // Ponto da CPU
+                cpuScore++;
+                if (cpuScoreEl) cpuScoreEl.textContent = cpuScore;
+                resetServe('player');
+            } else {
+                // Ponto do Jogador
+                playerScore++;
+                if (playerScoreEl) playerScoreEl.textContent = playerScore;
+                resetServe('cpu');
+            }
+        }
+    }
+
+    // Colisão Círculo x Círculo (Fantasma x Bola)
+    function checkBallCollision(entity) {
+        const dx = ball.x - entity.x;
+        const dy = ball.y - entity.y;
+        const distance = Math.hypot(dx, dy);
+
+        if (distance < ball.radius + entity.radius) {
+            const angle = Math.atan2(dy, dx);
+            const power = 10;
+            
+            ball.vx = Math.cos(angle) * power + entity.vx * 0.5;
+            ball.vy = Math.sin(angle) * power + entity.vy * 0.3;
+
+            // Evita que a bola grude dentro do personagem
+            ball.x = entity.x + Math.cos(angle) * (ball.radius + entity.radius + 2);
+            ball.y = entity.y + Math.sin(angle) * (ball.radius + entity.radius + 2);
+        }
+    }
+
+    // --- RENDERIZAÇÃO (DESENHO) ---
+    function drawGhost(ghost, color) {
+        ctx.save();
+        ctx.translate(ghost.x, ghost.y);
+
+        // Corpo do Fantasma
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(0, 0, ghost.radius, Math.PI, 0, false); // Cabeça ondulada/arredondada
+        ctx.lineTo(ghost.radius, ghost.radius / 2);
         
-        ctx.lineTo(x, y + width / 2);
+        // Saia / Ondas do Fantasma
+        const waveCount = 3;
+        const waveWidth = (ghost.radius * 2) / waveCount;
+        for (let i = 0; i < waveCount; i++) {
+            const x = ghost.radius - (i + 1) * waveWidth;
+            ctx.quadraticCurveTo(x + waveWidth / 2, ghost.radius + 10, x, ghost.radius / 2);
+        }
         ctx.closePath();
         ctx.fill();
 
-        // 2. Olhos
-        let eyeOffset = width * 0.25;
-        let eyeRadius = width * 0.15;
-        let pupilRadius = width * 0.07;
-
-        // Olho Esquerdo (Branco)
-        ctx.fillStyle = "white";
+        // Olhos
+        ctx.fillStyle = '#000';
         ctx.beginPath();
-        ctx.arc(x + eyeOffset, y + height * 0.35, eyeRadius, 0, Math.PI * 2);
+        ctx.arc(-10, -5, 4, 0, Math.PI * 2);
+        ctx.arc(10, -5, 4, 0, Math.PI * 2);
         ctx.fill();
 
-        // Olho Direito (Branco)
-        ctx.beginPath();
-        ctx.arc(x + width - eyeOffset, y + height * 0.35, eyeRadius, 0, Math.PI * 2);
-        ctx.fill();
+        // Cabelo ou Lacinho (Se for Feminino)
+        if (ghost.gender === 'female') {
+            ctx.fillStyle = '#FF4136'; // Lacinho Vermelho
+            ctx.beginPath();
+            ctx.arc(-12, -ghost.radius + 5, 6, 0, Math.PI * 2);
+            ctx.arc(-4, -ghost.radius + 5, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-        // Pupilas
-        ctx.fillStyle = "#111100";
-        ctx.beginPath();
-        ctx.arc(x + eyeOffset, y + height * 0.35, pupilRadius, 0, Math.PI * 2);
-        ctx.arc(x + width - eyeOffset, y + height * 0.35, pupilRadius, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.restore();
     }
 
-    // --- ATUALIZAÇÃO DA LÓGICA (UPDATE) ---
-    function update() {
-        // 1. Movimento do Jogador
-        if (keys['a'] || keys['A'] || keys['ArrowLeft']) player.vx = -player.speed;
-        else if (keys['d'] || keys['D'] || keys['ArrowRight']) player.vx = player.speed;
-        else player.vx = 0;
-
-        if ((keys['w'] || keys['W'] || keys['ArrowUp'] || keys[' ']) && player.isGrounded) {
-            player.vy = player.jumpPower;
-            player.isGrounded = false;
-        }
-
-        // Aplica física no Jogador
-        player.x += player.vx;
-        player.y += player.vy;
-        player.vy += gravity;
-
-        // Limites de chão e rede para o Jogador
-        if (player.y + player.height >= 580) {
-            player.y = 580 - player.height;
-            player.vy = 0;
-            player.isGrounded = true;
-        }
-        if (player.x < 0) player.x = 0;
-        if (player.x + player.width > net.x) player.x = net.x - player.width;
-
-        // 2. Inteligência Artificial do NPC
-        const diffElement = document.getElementById('difficulty');
-        const diff = diffElement ? diffElement.value : 'medium';
-        let cpuSpeed = diff === 'easy' ? 3 : (diff === 'medium' ? 4.5 : 6);
-        
-        if (ball.x > net.x) {
-            if (ball.x < cpu.x + 10) cpu.vx = -cpuSpeed;
-            else if (ball.x > cpu.x + cpu.width - 10) cpu.vx = cpuSpeed;
-            else cpu.vx = 0;
-
-            if (ball.y < cpu.y && ball.x > cpu.x - 30 && cpu.isGrounded) {
-                cpu.vy = cpu.jumpPower;
-                cpu.isGrounded = false;
-            }
-        } else {
-            cpu.vx = 0;
-        }
-
-        // Aplica física no NPC
-        cpu.x += cpu.vx;
-        cpu.y += cpu.vy;
-        cpu.vy += gravity;
-
-        if (cpu.y + cpu.height >= 580) {
-            cpu.y = 580 - cpu.height;
-            cpu.vy = 0;
-            cpu.isGrounded = true;
-        }
-        if (cpu.x < net.x + net.width) cpu.x = net.x + net.width;
-        if (cpu.x + cpu.width > canvas.width) cpu.x = canvas.width - cpu.width;
-
-        // 3. Física da Bola
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-        ball.vy += gravity * 0.8;
-
-        // Paredes laterais
-        if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
-            ball.vx *= -1;
-        }
-
-        // Colisões com Jogador e CPU
-        checkHeadCollision(player);
-        checkHeadCollision(cpu);
-
-        // Colisão com a Rede
-        if (ball.x + ball.radius > net.x && ball.x - ball.radius < net.x + net.width && ball.y > net.y) {
-            ball.vx *= -1;
-        }
-
-        // Ponto / Chão
-        if (ball.y + ball.radius >= 580) {
-            if (ball.x < canvas.width / 2) {
-                cpuScore++;
-                const cpuScoreEl = document.getElementById('cpuScore');
-                if (cpuScoreEl) cpuScoreEl.innerText = cpuScore;
-            } else {
-                playerScore++;
-                const playerScoreEl = document.getElementById('playerScore');
-                if (playerScoreEl) playerScoreEl.innerText = playerScore;
-            }
-            ball.reset();
-        }
-    }
-
-    // Detecção de Impacto com os Fantasminhas
-    function checkHeadCollision(p) {
-        let headX = p.x + p.width / 2;
-        let headY = p.y + p.height / 3;
-        
-        let dx = ball.x - headX;
-        let dy = ball.y - headY;
-        let distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < ball.radius + (p.width / 2)) {
-            ball.vy = -8;
-            ball.vx = dx * 0.3;
-        }
-    }
-
-    // --- DESENHO NA TELA (RENDER) ---
-    function draw() {
+    function render() {
+        // Limpar Tela
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Chão da quadra
-        ctx.fillStyle = '#D2B48C';
-        ctx.fillRect(0, 580, canvas.width, 20);
+        // Chão / Quadra
+        ctx.fillStyle = '#E6C280'; // Cor de Areia
+        ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+        // Linha do Chão
+        ctx.strokeStyle = '#D0A050';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
 
         // Rede
-        ctx.fillStyle = net.color;
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(net.x, net.y, net.width, net.height);
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(net.x + 3, net.y + net.height, 4, canvas.height - (net.y + net.height));
 
-        // Desenha o Jogador (Fantasma Vermelho)
-        drawGhost(player.x, player.y, player.width, player.height, player.color, player.isFemale);
-
-        // Desenha a CPU (Fantasma Azul)
-        drawGhost(cpu.x, cpu.y, cpu.width, cpu.height, cpu.color, cpu.isFemale);
+        // Personagens
+        drawGhost(player, player.color);
+        drawGhost(cpu, cpu.color);
 
         // Bola de Vôlei
-        ctx.fillStyle = '#FFDC00';
+        ctx.save();
+        ctx.translate(ball.x, ball.y);
+        ctx.fillStyle = '#FFDC00'; // Bola Amarela
         ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
         ctx.fill();
+        ctx.lineWidth = 2;
         ctx.strokeStyle = '#000';
         ctx.stroke();
+        ctx.restore();
     }
 
-    // Loop Principal do Jogo
+    // --- LOOP PRINCIPAL DO JOGO ---
     function gameLoop() {
-        if (jogoRodando) {
-            update(); // Só calcula a física se o jogo começou
-        }
-        draw(); // Desenha a tela (assim o cenário e os fantasma ficam visíveis no menu)
+        update();
+        render();
         requestAnimationFrame(gameLoop);
     }
 
+    // Inicia a execução contínua da renderização
     gameLoop();
 });
