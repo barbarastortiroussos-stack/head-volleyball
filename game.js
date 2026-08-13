@@ -255,3 +255,27 @@ window.addEventListener('DOMContentLoaded', () => {
 
     gameLoop();
 });
+function loopDoJogo() {
+  if (jogoRodando) {
+    // 1. Apaga tudo que foi desenhado no frame anterior
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Atualiza as posições (física, teclas pressionadas, colisões)
+    atualizarPosicoes(); // Ou o nome da sua função de mover
+
+    // 3. Desenha os elementos atualizados na tela
+    desenharCenario();
+    desenharJogadores();
+    desenharBola();
+  }
+
+  // Pede para o navegador chamar essa função de novo no próximo frame (animação fluida)
+  requestAnimationFrame(loopDoJogo);
+}
+const botaoJogar = document.getElementById('seu-botao-jogar');
+const telaMenu = document.getElementById('sua-div-do-menu');
+
+botaoJogar.addEventListener('click', function() {
+  jogoRodando = true; // Libera a lógica do jogo!
+  telaMenu.style.display = 'none'; // Some com o menu da tela
+});
