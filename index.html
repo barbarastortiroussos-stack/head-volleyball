@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasma Vôlei</title>
+    <title>Ghost Volleyball</title>
     <style>
         body { 
             margin: 0; 
@@ -162,34 +162,28 @@
 
         <!-- Placar -->
         <div id="ui">
-            Placar: <span id="playerScore">0</span> x <span id="cpuScore">0</span>
+            Scoreboard: <span id="playerScore">0</span> x <span id="cpuScore">0</span>
         </div>
 
         <!-- Tela do Menu Inicial -->
-        <div id="startScreen" class="overlay">
-            <h1>FANTASMA VÔLEI</h1>
-            
-            <label for="gender">Personagem:</label>
-            <select id="gender">
-                <option value="male">Masculino</option>
-                <option value="female">Feminino</option>
-            </select>
+        <!-- Tela do Menu Inicial -->
+<div id="startScreen" class="overlay">
+    <h1>GHOST VOLLEYBALL</h1> 
+    
+    <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+    </select>
 
-            <label for="difficulty">Dificuldade:</label>
-            <select id="difficulty">
-                <option value="easy">Fácil</option>
-                <option value="medium" selected>Médio</option>
-                <option value="hard">Difícil</option>
-            </select>
-
-            <button id="startBtn">JOGAR</button>
-        </div>
+    <button id="startBtn">PLAY</button>
+</div>
 
         <!-- Tela de Pausa -->
         <div id="pauseScreen" class="overlay hidden">
-            <h1>PAUSADO</h1>
-            <p>Aperte "P" ou clique abaixo para continuar</p>
-            <button id="resumeBtn">CONTINUAR</button>
+            <h1>Paused</h1>
+            <p>Press 'P' or click below to continue</p>
+            <button id="resumeBtn">Continue</button>
         </div>
     </div>
 
