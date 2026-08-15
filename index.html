@@ -185,6 +185,13 @@
             <p>Press 'P' or click below to continue</p>
             <button id="resumeBtn">Continue</button>
         </div>
+
+        <div id="gameOverScreen" class="overlay hidden">
+    <h1 id="gameOverTitle">YOU WIN!</h1>
+    <p id="finalScore">10 x 0</p>
+    <button id="playAgainBtn">PLAY AGAIN</button>
+</div>
+        
     </div>
 
     <!-- Controles de Toque para Celular -->
@@ -205,6 +212,15 @@ body, .btn-touch, button {
     touch-action: manipulation;
     -webkit-user-select: none;
     user-select: none;
+    #gameOverTitle {
+    font-size: 42px;
+    margin-bottom: 5px;
+}
+
+#finalScore {
+    font-size: 28px;
+    font-weight: bold;
+}
 }
 </body>
 </html>
