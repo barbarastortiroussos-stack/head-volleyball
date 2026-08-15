@@ -152,6 +152,25 @@
         font-size: 20px;
     }
 }
+        /* Impede zoom duplo toque e seleções no mobile */
+body,
+.btn-touch,
+button {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Tela de resultado */
+#gameOverTitle {
+    font-size: 42px;
+    margin-bottom: 5px;
+}
+
+#finalScore {
+    font-size: 28px;
+    font-weight: bold;
+}
     </style>
 </head>
 <body>
@@ -188,7 +207,7 @@
 
         <div id="gameOverScreen" class="overlay hidden">
     <h1 id="gameOverTitle">YOU WIN!</h1>
-    <p id="finalScore">10 x 0</p>
+    <p id="finalScore">0 x 0</p>
     <button id="playAgainBtn">PLAY AGAIN</button>
 </div>
         
@@ -207,20 +226,5 @@
 
     <script src="game.js"></script>
 
-    /* Impede zoom duplo toque e seleções no mobile */
-body, .btn-touch, button {
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-    #gameOverTitle {
-    font-size: 42px;
-    margin-bottom: 5px;
-}
-
-#finalScore {
-    font-size: 28px;
-    font-weight: bold;
-}
-}
 </body>
 </html>
