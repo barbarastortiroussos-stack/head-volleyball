@@ -1,17 +1,26 @@
 window.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     if (!canvas) return;
+
     const ctx = canvas.getContext('2d');
 
     // --- ELEMENTOS DA INTERFACE (HTML) ---
     const startScreen = document.getElementById('startScreen');
     const pauseScreen = document.getElementById('pauseScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+
     const startBtn = document.getElementById('startBtn');
     const resumeBtn = document.getElementById('resumeBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
     const genderSelect = document.getElementById('gender');
     const difficultySelect = document.getElementById('difficulty');
+
     const playerScoreEl = document.getElementById('playerScore');
     const cpuScoreEl = document.getElementById('cpuScore');
+
+    const gameOverTitle = document.getElementById('gameOverTitle');
+    const finalScoreEl = document.getElementById('finalScore');
 
     // Controles Touch
     const btnLeft = document.getElementById('btnLeft');
@@ -21,11 +30,17 @@ window.addEventListener('DOMContentLoaded', () => {
     // --- ESTADOS DO JOGO ---
     let gameRunning = false;
     let isPaused = false;
+    let gameOver = false;
+
     let playerScore = 0;
     let cpuScore = 0;
 
+    // Quantidade de pontos necessária para vencer
+    const WINNING_SCORE = 10;
+
     // --- CONFIGURAÇÃO DA REDE E CAMPO ---
     const groundY = 520;
+
     const net = {
         x: canvas.width / 2 - 5,
         y: 380,
@@ -49,7 +64,7 @@ window.addEventListener('DOMContentLoaded', () => {
         vx: 0,
         vy: 0,
         jumping: false,
-        color: '#FFFFFF', // Cor base do fantasma
+        color: '#FFFFFF',
         hairColor: '#000000',
         gender: 'male'
     };
@@ -80,321 +95,871 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- DIFICULDADES DA CPU ---
     const difficultySettings = {
-        easy: { speed: 3.5, jumpPower: -9, reaction: 0.04 },
-        medium: { speed: 5.0, jumpPower: -11, reaction: 0.08 },
-        hard: { speed: 6.5, jumpPower: -12.5, reaction: 0.15 }
+        easy: {
+            speed: 3.5,
+            jumpPower: -9,
+            reaction: 0.04
+        },
+
+        medium: {
+            speed: 5.0,
+            jumpPower: -11,
+            reaction: 0.08
+        },
+
+        hard: {
+            speed: 6.5,
+            jumpPower: -12.5,
+            reaction: 0.15
+        }
     };
 
-    // --- CONTROLES DE TECLADO ---
+    // =========================================================
+    // CONTROLES DE TECLADO
+    // =========================================================
+
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
-        if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-        if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') {
-            if (!keys.up && !player.jumping && gameRunning && !isPaused) {
+
+        // Movimento
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+            keys.left = true;
+        }
+
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+            keys.right = true;
+        }
+
+        // Pulo
+        if (
+            e.code === 'ArrowUp' ||
+            e.code === 'KeyW' ||
+            e.code === 'Space'
+        ) {
+            if (
+                !keys.up &&
+                !player.jumping &&
+                gameRunning &&
+                !isPaused &&
+                !gameOver
+            ) {
                 player.vy = -12;
                 player.jumping = true;
             }
+
             keys.up = true;
         }
-        if (e.code === 'KeyP') togglePause();
+
+        // Pausa
+        if (e.code === 'KeyP') {
+            togglePause();
+        }
     });
 
     window.addEventListener('keyup', (e) => {
-        if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
-        if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
-        if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') keys.up = false;
+
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+            keys.left = false;
+        }
+
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+            keys.right = false;
+        }
+
+        if (
+            e.code === 'ArrowUp' ||
+            e.code === 'KeyW' ||
+            e.code === 'Space'
+        ) {
+            keys.up = false;
+        }
     });
 
-    // --- CONTROLES TOUCH (MOBILE) ---
+    // =========================================================
+    // CONTROLES TOUCH
+    // =========================================================
+
     const setupTouchBtn = (element, keyProp) => {
+
         if (!element) return;
-        const start = (e) => { e.preventDefault(); keys[keyProp] = true; };
-        const end = (e) => { e.preventDefault(); keys[keyProp] = false; };
+
+        const start = (e) => {
+            e.preventDefault();
+
+            if (!gameRunning || isPaused || gameOver) return;
+
+            keys[keyProp] = true;
+        };
+
+        const end = (e) => {
+            e.preventDefault();
+
+            keys[keyProp] = false;
+        };
+
         element.addEventListener('touchstart', start);
         element.addEventListener('touchend', end);
+        element.addEventListener('touchcancel', end);
+
         element.addEventListener('mousedown', start);
         element.addEventListener('mouseup', end);
+        element.addEventListener('mouseleave', end);
     };
 
     setupTouchBtn(btnLeft, 'left');
     setupTouchBtn(btnRight, 'right');
 
     if (btnJump) {
+
         const doJump = (e) => {
+
             e.preventDefault();
-            if (!player.jumping && gameRunning && !isPaused) {
+
+            if (
+                !player.jumping &&
+                gameRunning &&
+                !isPaused &&
+                !gameOver
+            ) {
                 player.vy = -12;
                 player.jumping = true;
             }
         };
+
         btnJump.addEventListener('touchstart', doJump);
         btnJump.addEventListener('mousedown', doJump);
     }
 
-    // --- REINICIAR PONTO ---
+    // =========================================================
+    // ATUALIZAR PLACAR
+    // =========================================================
+
+    function updateScoreboard() {
+
+        if (playerScoreEl) {
+            playerScoreEl.textContent = playerScore;
+        }
+
+        if (cpuScoreEl) {
+            cpuScoreEl.textContent = cpuScore;
+        }
+    }
+
+    // =========================================================
+    // INICIAR NOVA PARTIDA
+    // =========================================================
+
+    function startNewMatch() {
+
+        playerScore = 0;
+        cpuScore = 0;
+
+        gameOver = false;
+        gameRunning = true;
+        isPaused = false;
+
+        updateScoreboard();
+
+        // Esconde todas as telas
+        if (startScreen) {
+            startScreen.classList.add('hidden');
+        }
+
+        if (pauseScreen) {
+            pauseScreen.classList.add('hidden');
+        }
+
+        if (gameOverScreen) {
+            gameOverScreen.classList.add('hidden');
+        }
+
+        // Reinicia o saque
+        resetServe('player');
+    }
+
+    // =========================================================
+    // REINICIAR PONTO
+    // =========================================================
+
     function resetServe(server = 'player') {
+
         player.x = 150;
         player.y = groundY - player.radius;
+
         player.vx = 0;
         player.vy = 0;
+        player.jumping = false;
 
         cpu.x = 650;
         cpu.y = groundY - cpu.radius;
+
         cpu.vx = 0;
         cpu.vy = 0;
+        cpu.jumping = false;
 
         if (server === 'player') {
+
             ball.x = 200;
             ball.y = 200;
+
         } else {
+
             ball.x = 600;
             ball.y = 200;
         }
+
         ball.vx = 0;
         ball.vy = 0;
     }
 
-    // --- PAUSA ---
+    // =========================================================
+    // PAUSA
+    // =========================================================
+
     function togglePause() {
+
+        // Não permite pausar antes de começar
         if (!gameRunning) return;
+
+        // Não permite pausar depois da partida terminar
+        if (gameOver) return;
+
         isPaused = !isPaused;
+
         if (isPaused) {
+
             pauseScreen.classList.remove('hidden');
+
         } else {
+
             pauseScreen.classList.add('hidden');
         }
     }
 
-    if (resumeBtn) resumeBtn.addEventListener('click', togglePause);
+    if (resumeBtn) {
+        resumeBtn.addEventListener('click', togglePause);
+    }
 
-    // --- INICIAR O JOGO ---
-    if (startBtn) {
-        startBtn.addEventListener('click', () => {
-            // Aplica opções escolhidas no menu
-            player.gender = genderSelect ? genderSelect.value : 'male';
-            cpu.difficulty = difficultySelect ? difficultySelect.value : 'medium';
+    // =========================================================
+    // FINAL DA PARTIDA
+    // =========================================================
 
-            playerScore = 0;
-            cpuScore = 0;
-            if (playerScoreEl) playerScoreEl.textContent = playerScore;
-            if (cpuScoreEl) cpuScoreEl.textContent = cpuScore;
+    function endMatch(winner) {
 
-            startScreen.classList.add('hidden');
-            gameRunning = true;
-            isPaused = false;
+        gameOver = true;
+        gameRunning = false;
+        isPaused = false;
+
+        // Para qualquer movimento que esteja acontecendo
+        keys.left = false;
+        keys.right = false;
+        keys.up = false;
+
+        player.vx = 0;
+        player.vy = 0;
+
+        cpu.vx = 0;
+        cpu.vy = 0;
+
+        // Atualiza o texto do placar
+        updateScoreboard();
+
+        // Define a mensagem
+        if (winner === 'player') {
+
+            if (gameOverTitle) {
+                gameOverTitle.textContent = 'YOU WIN!';
+            }
+
+        } else {
+
+            if (gameOverTitle) {
+                gameOverTitle.textContent = 'CPU WINS!';
+            }
+        }
+
+        // Mostra o placar final
+        if (finalScoreEl) {
+            finalScoreEl.textContent =
+                `${playerScore} x ${cpuScore}`;
+        }
+
+        // Esconde a pausa
+        if (pauseScreen) {
+            pauseScreen.classList.add('hidden');
+        }
+
+        // Mostra a tela de resultado
+        if (gameOverScreen) {
+            gameOverScreen.classList.remove('hidden');
+        }
+    }
+
+    // =========================================================
+    // MARCAR PONTO
+    // =========================================================
+
+    function scorePoint(winner) {
+
+        // Segurança: não permite pontuar depois do fim
+        if (gameOver) return;
+
+        if (winner === 'player') {
+
+            playerScore++;
+
+        } else {
+
+            cpuScore++;
+        }
+
+        updateScoreboard();
+
+        // Verifica se alguém chegou aos 10 pontos
+        if (playerScore >= WINNING_SCORE) {
+
+            endMatch('player');
+            return;
+        }
+
+        if (cpuScore >= WINNING_SCORE) {
+
+            endMatch('cpu');
+            return;
+        }
+
+        // A partida continua
+        // Quem marcou o ponto perde o próximo saque,
+        // então o adversário começa com a bola.
+        if (winner === 'player') {
+
+            resetServe('cpu');
+
+        } else {
 
             resetServe('player');
+        }
+    }
+
+    // =========================================================
+    // BOTÃO PLAY NOVAMENTE
+    // =========================================================
+
+    if (playAgainBtn) {
+
+        playAgainBtn.addEventListener('click', () => {
+
+            // Mantém a dificuldade escolhida
+            cpu.difficulty = difficultySelect
+                ? difficultySelect.value
+                : 'medium';
+
+            // Mantém o gênero escolhido
+            player.gender = genderSelect
+                ? genderSelect.value
+                : 'male';
+
+            startNewMatch();
         });
     }
 
-    // --- LÓGICA DE ATUALIZAÇÃO (PHYSICS & IA) ---
-    function update() {
-        if (!gameRunning || isPaused) return;
+    // =========================================================
+    // BOTÃO PLAY DO MENU INICIAL
+    // =========================================================
 
-        // Movimento do Jogador
-        if (keys.left) player.vx = -player.speed;
-        else if (keys.right) player.vx = player.speed;
-        else player.vx = 0;
+    if (startBtn) {
+
+        startBtn.addEventListener('click', () => {
+
+            // Aplica opções escolhidas no menu
+            player.gender = genderSelect
+                ? genderSelect.value
+                : 'male';
+
+            cpu.difficulty = difficultySelect
+                ? difficultySelect.value
+                : 'medium';
+
+            startNewMatch();
+        });
+    }
+
+    // =========================================================
+    // LÓGICA DE ATUALIZAÇÃO
+    // =========================================================
+
+    function update() {
+
+        if (!gameRunning || isPaused || gameOver) {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // MOVIMENTO DO JOGADOR
+        // -----------------------------------------------------
+
+        if (keys.left) {
+
+            player.vx = -player.speed;
+
+        } else if (keys.right) {
+
+            player.vx = player.speed;
+
+        } else {
+
+            player.vx = 0;
+        }
 
         player.x += player.vx;
-        player.vy += 0.5; // Gravidade
+
+        player.vy += 0.5;
         player.y += player.vy;
 
-        // Limites do Jogador (Lado Esquerdo)
-        if (player.x - player.radius < 0) player.x = player.radius;
-        if (player.x + player.radius > net.x) player.x = net.x - player.radius;
+        // Limites do jogador
+        if (player.x - player.radius < 0) {
+            player.x = player.radius;
+        }
+
+        if (player.x + player.radius > net.x) {
+            player.x = net.x - player.radius;
+        }
+
+        // Chão
         if (player.y + player.radius >= groundY) {
+
             player.y = groundY - player.radius;
             player.vy = 0;
             player.jumping = false;
         }
 
-        // Lógica da CPU (Inteligência Artificial)
-        const config = difficultySettings[cpu.difficulty] || difficultySettings.medium;
-        const targetX = ball.x > net.x + net.width ? ball.x : 650;
+        // -----------------------------------------------------
+        // IA DA CPU
+        // -----------------------------------------------------
 
-        if (cpu.x < targetX - 10) cpu.vx = config.speed;
-        else if (cpu.x > targetX + 10) cpu.vx = -config.speed;
-        else cpu.vx = 0;
+        const config =
+            difficultySettings[cpu.difficulty] ||
+            difficultySettings.medium;
+
+        const targetX =
+            ball.x > net.x + net.width
+                ? ball.x
+                : 650;
+
+        if (cpu.x < targetX - 10) {
+
+            cpu.vx = config.speed;
+
+        } else if (cpu.x > targetX + 10) {
+
+            cpu.vx = -config.speed;
+
+        } else {
+
+            cpu.vx = 0;
+        }
 
         // Pulo da CPU
-        if (ball.x > net.x + net.width && ball.x < 750 && ball.y < 350 && !cpu.jumping) {
+        if (
+            ball.x > net.x + net.width &&
+            ball.x < 750 &&
+            ball.y < 350 &&
+            !cpu.jumping
+        ) {
+
             if (Math.random() < config.reaction) {
+
                 cpu.vy = config.jumpPower;
                 cpu.jumping = true;
             }
         }
 
         cpu.x += cpu.vx;
+
         cpu.vy += 0.5;
         cpu.y += cpu.vy;
 
-        // Limites da CPU (Lado Direito)
-        if (cpu.x - cpu.radius < net.x + net.width) cpu.x = net.x + net.width + cpu.radius;
-        if (cpu.x + cpu.radius > canvas.width) cpu.x = canvas.width - cpu.radius;
+        // Limites da CPU
+        if (cpu.x - cpu.radius < net.x + net.width) {
+
+            cpu.x =
+                net.x +
+                net.width +
+                cpu.radius;
+        }
+
+        if (cpu.x + cpu.radius > canvas.width) {
+
+            cpu.x =
+                canvas.width -
+                cpu.radius;
+        }
+
+        // Chão da CPU
         if (cpu.y + cpu.radius >= groundY) {
+
             cpu.y = groundY - cpu.radius;
             cpu.vy = 0;
             cpu.jumping = false;
         }
 
-        // Física da Bola
+        // -----------------------------------------------------
+        // FÍSICA DA BOLA
+        // -----------------------------------------------------
+
         ball.vy += ball.gravity;
+
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Colisão da Bola com Paredes e Teto
+        // Paredes
         if (ball.x - ball.radius < 0) {
+
             ball.x = ball.radius;
             ball.vx *= -ball.bounce;
         }
+
         if (ball.x + ball.radius > canvas.width) {
-            ball.x = canvas.width - ball.radius;
+
+            ball.x =
+                canvas.width -
+                ball.radius;
+
             ball.vx *= -ball.bounce;
         }
+
+        // Teto
         if (ball.y - ball.radius < 0) {
+
             ball.y = ball.radius;
             ball.vy *= -1;
         }
 
-        // Colisão da Bola com a Rede
-        if (ball.x + ball.radius > net.x && ball.x - ball.radius < net.x + net.width) {
+        // -----------------------------------------------------
+        // COLISÃO COM A REDE
+        // -----------------------------------------------------
+
+        if (
+            ball.x + ball.radius > net.x &&
+            ball.x - ball.radius < net.x + net.width
+        ) {
+
             if (ball.y + ball.radius > net.y) {
+
                 if (ball.x < net.x + net.width / 2) {
-                    ball.x = net.x - ball.radius;
-                    ball.vx = -Math.abs(ball.vx) * 0.8;
+
+                    ball.x =
+                        net.x -
+                        ball.radius;
+
+                    ball.vx =
+                        -Math.abs(ball.vx) *
+                        0.8;
+
                 } else {
-                    ball.x = net.x + net.width + ball.radius;
-                    ball.vx = Math.abs(ball.vx) * 0.8;
+
+                    ball.x =
+                        net.x +
+                        net.width +
+                        ball.radius;
+
+                    ball.vx =
+                        Math.abs(ball.vx) *
+                        0.8;
                 }
             }
         }
 
-        // Colisão da Bola com Jogador / CPU
+        // -----------------------------------------------------
+        // COLISÕES
+        // -----------------------------------------------------
+
         checkBallCollision(player);
         checkBallCollision(cpu);
 
-        // Pontuação (Bola toca o chão)
+        // -----------------------------------------------------
+        // VERIFICAÇÃO DE PONTO
+        // -----------------------------------------------------
+
         if (ball.y + ball.radius >= groundY) {
+
             if (ball.x < net.x + net.width / 2) {
-                // Ponto da CPU
-                cpuScore++;
-                if (cpuScoreEl) cpuScoreEl.textContent = cpuScore;
-                resetServe('player');
+
+                // Bola caiu no lado do jogador
+                // CPU ganha o ponto
+                scorePoint('cpu');
+
             } else {
-                // Ponto do Jogador
-                playerScore++;
-                if (playerScoreEl) playerScoreEl.textContent = playerScore;
-                resetServe('cpu');
+
+                // Bola caiu no lado da CPU
+                // Jogador ganha o ponto
+                scorePoint('player');
             }
         }
     }
 
-    // Colisão Círculo x Círculo (Fantasma x Bola)
+    // =========================================================
+    // COLISÃO BOLA X FANTASMA
+    // =========================================================
+
     function checkBallCollision(entity) {
+
         const dx = ball.x - entity.x;
         const dy = ball.y - entity.y;
+
         const distance = Math.hypot(dx, dy);
 
         if (distance < ball.radius + entity.radius) {
-            const angle = Math.atan2(dy, dx);
-            const power = 10;
-            
-            ball.vx = Math.cos(angle) * power + entity.vx * 0.5;
-            ball.vy = Math.sin(angle) * power + entity.vy * 0.3;
 
-            // Evita que a bola grude dentro do personagem
-            ball.x = entity.x + Math.cos(angle) * (ball.radius + entity.radius + 2);
-            ball.y = entity.y + Math.sin(angle) * (ball.radius + entity.radius + 2);
+            const angle = Math.atan2(dy, dx);
+
+            const power = 10;
+
+            ball.vx =
+                Math.cos(angle) *
+                power +
+                entity.vx * 0.5;
+
+            ball.vy =
+                Math.sin(angle) *
+                power +
+                entity.vy * 0.3;
+
+            // Evita a bola ficar presa no personagem
+            ball.x =
+                entity.x +
+                Math.cos(angle) *
+                (ball.radius + entity.radius + 2);
+
+            ball.y =
+                entity.y +
+                Math.sin(angle) *
+                (ball.radius + entity.radius + 2);
         }
     }
 
-    // --- RENDERIZAÇÃO (DESENHO) ---
-    function drawGhost(ghost, color) {
-        ctx.save();
-        ctx.translate(ghost.x, ghost.y);
+    // =========================================================
+    // RENDERIZAÇÃO
+    // =========================================================
 
-        // Corpo do Fantasma
+    function drawGhost(ghost, color) {
+
+        ctx.save();
+
+        ctx.translate(
+            ghost.x,
+            ghost.y
+        );
+
+        // Corpo
         ctx.fillStyle = color;
+
         ctx.beginPath();
-        ctx.arc(0, 0, ghost.radius, Math.PI, 0, false); // Cabeça ondulada/arredondada
-        ctx.lineTo(ghost.radius, ghost.radius / 2);
-        
-        // Saia / Ondas do Fantasma
+
+        ctx.arc(
+            0,
+            0,
+            ghost.radius,
+            Math.PI,
+            0,
+            false
+        );
+
+        ctx.lineTo(
+            ghost.radius,
+            ghost.radius / 2
+        );
+
+        // Ondas
         const waveCount = 3;
-        const waveWidth = (ghost.radius * 2) / waveCount;
+
+        const waveWidth =
+            (ghost.radius * 2) /
+            waveCount;
+
         for (let i = 0; i < waveCount; i++) {
-            const x = ghost.radius - (i + 1) * waveWidth;
-            ctx.quadraticCurveTo(x + waveWidth / 2, ghost.radius + 10, x, ghost.radius / 2);
+
+            const x =
+                ghost.radius -
+                (i + 1) *
+                waveWidth;
+
+            ctx.quadraticCurveTo(
+                x + waveWidth / 2,
+                ghost.radius + 10,
+                x,
+                ghost.radius / 2
+            );
         }
+
         ctx.closePath();
         ctx.fill();
 
         // Olhos
         ctx.fillStyle = '#000';
+
         ctx.beginPath();
-        ctx.arc(-10, -5, 4, 0, Math.PI * 2);
-        ctx.arc(10, -5, 4, 0, Math.PI * 2);
+
+        ctx.arc(
+            -10,
+            -5,
+            4,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.arc(
+            10,
+            -5,
+            4,
+            0,
+            Math.PI * 2
+        );
+
         ctx.fill();
 
-        // Cabelo ou Lacinho (Se for Feminino)
+        // Lacinho feminino
         if (ghost.gender === 'female') {
-            ctx.fillStyle = '#FF4136'; // Lacinho Vermelho
+
+            ctx.fillStyle = '#FF4136';
+
             ctx.beginPath();
-            ctx.arc(-12, -ghost.radius + 5, 6, 0, Math.PI * 2);
-            ctx.arc(-4, -ghost.radius + 5, 6, 0, Math.PI * 2);
+
+            ctx.arc(
+                -12,
+                -ghost.radius + 5,
+                6,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.arc(
+                -4,
+                -ghost.radius + 5,
+                6,
+                0,
+                Math.PI * 2
+            );
+
             ctx.fill();
         }
 
         ctx.restore();
     }
 
+    // =========================================================
+    // RENDER
+    // =========================================================
+
     function render() {
-        // Limpar Tela
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Chão / Quadra
-        ctx.fillStyle = '#E6C280'; // Cor de Areia
-        ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+        ctx.clearRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
 
-        // Linha do Chão
+        // Chão
+        ctx.fillStyle = '#E6C280';
+
+        ctx.fillRect(
+            0,
+            groundY,
+            canvas.width,
+            canvas.height - groundY
+        );
+
+        // Linha do chão
         ctx.strokeStyle = '#D0A050';
         ctx.lineWidth = 4;
+
         ctx.beginPath();
-        ctx.moveTo(0, groundY);
-        ctx.lineTo(canvas.width, groundY);
+
+        ctx.moveTo(
+            0,
+            groundY
+        );
+
+        ctx.lineTo(
+            canvas.width,
+            groundY
+        );
+
         ctx.stroke();
 
         // Rede
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(net.x, net.y, net.width, net.height);
+
+        ctx.fillRect(
+            net.x,
+            net.y,
+            net.width,
+            net.height
+        );
+
         ctx.fillStyle = '#333333';
-        ctx.fillRect(net.x + 3, net.y + net.height, 4, canvas.height - (net.y + net.height));
 
-        // Personagens
-        drawGhost(player, player.color);
-        drawGhost(cpu, cpu.color);
+        ctx.fillRect(
+            net.x + 3,
+            net.y + net.height,
+            4,
+            canvas.height -
+            (net.y + net.height)
+        );
 
-        // Bola de Vôlei
+        // Fantasmas
+        drawGhost(
+            player,
+            player.color
+        );
+
+        drawGhost(
+            cpu,
+            cpu.color
+        );
+
+        // Bola
         ctx.save();
-        ctx.translate(ball.x, ball.y);
-        ctx.fillStyle = '#FFDC00'; // Bola Amarela
+
+        ctx.translate(
+            ball.x,
+            ball.y
+        );
+
+        ctx.fillStyle = '#FFDC00';
+
         ctx.beginPath();
-        ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+
+        ctx.arc(
+            0,
+            0,
+            ball.radius,
+            0,
+            Math.PI * 2
+        );
+
         ctx.fill();
+
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#000';
+
         ctx.stroke();
+
         ctx.restore();
     }
 
-    // --- LOOP PRINCIPAL DO JOGO ---
+    // =========================================================
+    // LOOP PRINCIPAL
+    // =========================================================
+
     function gameLoop() {
+
         update();
         render();
+
         requestAnimationFrame(gameLoop);
     }
 
-    // Inicia a execução contínua da renderização
+    // Inicia o jogo
     gameLoop();
 });
