@@ -12,6 +12,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('startBtn');
     const resumeBtn = document.getElementById('resumeBtn');
     const playAgainBtn = document.getElementById('playAgainBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
 
     const genderSelect = document.getElementById('gender');
     const difficultySelect = document.getElementById('difficulty');
@@ -351,6 +352,9 @@ pointMessageTimer = 0;
     if (resumeBtn) {
         resumeBtn.addEventListener('click', togglePause);
     }
+    if (pauseBtn) {
+    pauseBtn.addEventListener('click', togglePause);
+}
 
     // =========================================================
     // FINAL DA PARTIDA
