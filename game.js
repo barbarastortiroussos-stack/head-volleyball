@@ -486,7 +486,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // =========================================================
     // LÓGICA DE ATUALIZAÇÃO
     // =========================================================
-
+function predictBallX(predictionTime) {
+    return ball.x + ball.vx * predictionTime;
+}
     function update() {
 
         if (!gameRunning || isPaused || gameOver) {
@@ -536,27 +538,64 @@ window.addEventListener('DOMContentLoaded', () => {
         // IA DA CPU
         // -----------------------------------------------------
 
-        const config =
-            difficultySettings[cpu.difficulty] ||
-            difficultySettings.medium;
+       // -----------------------------------------------------
+// IA DA CPU
+// -----------------------------------------------------
 
-        const targetX =
-            ball.x > net.x + net.width
-                ? ball.x
-                : 650;
+const config =
+    difficultySettings[cpu.difficulty] ||
+    difficultySettings.medium;
 
-        if (cpu.x < targetX - 10) {
+// Tempo de previsão baseado na dificuldade
+let predictionTime = 15;
 
-            cpu.vx = config.speed;
+if (cpu.difficulty === 'easy') {
+    predictionTime = 8;
+}
 
-        } else if (cpu.x > targetX + 10) {
+if (cpu.difficulty === 'medium') {
+    predictionTime = 15;
+}
 
-            cpu.vx = -config.speed;
+if (cpu.difficulty === 'hard') {
+    predictionTime = 25;
+}
 
-        } else {
+// Posição padrão da CPU
+let targetX = 650;
 
-            cpu.vx = 0;
-        }
+// Se a bola está no lado da CPU
+// e está vindo em direção a ela,
+// tenta prever onde ela estará.
+if (
+    ball.x > net.x + net.width &&
+    ball.vx < 0
+) {
+    targetX = predictBallX(predictionTime);
+}
+
+// Impede a CPU de tentar atravessar a rede
+targetX = Math.max(
+    net.x + net.width + cpu.radius,
+    Math.min(
+        canvas.width - cpu.radius,
+        targetX
+    )
+);
+
+// Movimento em direção ao alvo
+if (cpu.x < targetX - 10) {
+
+    cpu.vx = config.speed;
+
+} else if (cpu.x > targetX + 10) {
+
+    cpu.vx = -config.speed;
+
+} else {
+
+    cpu.vx = 0;
+}
 
         // Pulo da CPU
         if (
@@ -753,15 +792,17 @@ window.addEventListener('DOMContentLoaded', () => {
     // 3. FORÇA DA REBATIDA
     // =====================================================
 
-    const hitPower = 10;
+    const hitPower = 8;
 
     // Reflexão da velocidade da bola
     ball.vx -= 2 * relativeVelocity * nx;
     ball.vy -= 2 * relativeVelocity * ny;
 
-    // Adiciona força própria do golpe
-    ball.vx += nx * hitPower;
-    ball.vy += ny * hitPower;
+ // Força horizontal do golpe
+ball.vx += nx * hitPower;
+
+// Força vertical mais controlada
+ball.vy += ny * hitPower * 0.45;
 
     // =====================================================
     // 4. INFLUÊNCIA DO MOVIMENTO DO JOGADOR
