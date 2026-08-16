@@ -34,6 +34,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let playerScore = 0;
     let cpuScore = 0;
+    let particles = [];
 
     // Quantidade de pontos necessária para vencer
     const WINNING_SCORE = 10;
@@ -489,6 +490,21 @@ window.addEventListener('DOMContentLoaded', () => {
 function predictBallX(predictionTime) {
     return ball.x + ball.vx * predictionTime;
 }
+    function createHitParticles(x, y) {
+
+    for (let i = 0; i < 8; i++) {
+
+        particles.push({
+            x: x,
+            y: y,
+
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+
+            life: 20
+        });
+    }
+}
     function update() {
 
         if (!gameRunning || isPaused || gameOver) {
@@ -613,6 +629,7 @@ if (
         cpu.vy = config.jumpPower;
         cpu.jumping = true;
     }
+    
 }
         // Aplica o movimento da CPU
 cpu.x += cpu.vx;
@@ -736,7 +753,21 @@ cpu.y += cpu.vy;
                 // Jogador ganha o ponto
                 scorePoint('player');
             }
-        }
+    }
+   // Atualiza as partículas
+for (let i = particles.length - 1; i >= 0; i--) {
+
+    const particle = particles[i];
+
+    particle.x += particle.vx;
+    particle.y += particle.vy;
+
+    particle.life--;
+
+    if (particle.life <= 0) {
+        particles.splice(i, 1);
+    }
+}
     }
 
     // =========================================================
@@ -790,6 +821,7 @@ cpu.y += cpu.vy;
     if (relativeVelocity > 0) {
         return;
     }
+      
 
     // =====================================================
     // 3. FORÇA DA REBATIDA
@@ -830,6 +862,9 @@ ball.vy += ny * hitPower * 0.45;
         -maxVerticalSpeed,
         Math.min(maxVerticalSpeed, ball.vy)
     );
+
+      // ✨ Efeito visual do impacto
+    createHitParticles(ball.x, ball.y);
 }
 
     // =========================================================
@@ -1041,6 +1076,29 @@ ball.vy += ny * hitPower * 0.45;
         ctx.stroke();
 
         ctx.restore();
+
+        // Desenha as partículas
+for (const particle of particles) {
+
+    ctx.globalAlpha = particle.life / 20;
+
+    ctx.fillStyle = "#FFFFFF";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        particle.x,
+        particle.y,
+        3,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+}
+
+// Restaura a transparência normal
+ctx.globalAlpha = 1;
     }
 
     // =========================================================
