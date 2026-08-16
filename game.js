@@ -542,39 +542,43 @@ function predictBallX(predictionTime) {
 // IA DA CPU
 // -----------------------------------------------------
 
+// -----------------------------------------------------
+// IA DA CPU
+// -----------------------------------------------------
+
 const config =
     difficultySettings[cpu.difficulty] ||
     difficultySettings.medium;
 
-// Tempo de previsão baseado na dificuldade
-let predictionTime = 15;
+// Quanto mais difícil, mais longe a CPU consegue prever
+let predictionTime;
 
 if (cpu.difficulty === 'easy') {
-    predictionTime = 8;
+    predictionTime = 6;
+} else if (cpu.difficulty === 'medium') {
+    predictionTime = 10;
+} else {
+    predictionTime = 14;
 }
 
-if (cpu.difficulty === 'medium') {
-    predictionTime = 15;
-}
-
-if (cpu.difficulty === 'hard') {
-    predictionTime = 25;
-}
-
-// Posição padrão da CPU
+// Posição padrão: centro do lado da CPU
 let targetX = 650;
 
-// Se a bola está no lado da CPU
-// e está vindo em direção a ela,
-// tenta prever onde ela estará.
-if (
-    ball.x > net.x + net.width &&
-    ball.vx < 0
-) {
-    targetX = predictBallX(predictionTime);
+// A CPU só precisa perseguir a bola quando ela
+// está no lado dela.
+if (ball.x > net.x + net.width) {
+
+    // Se a bola está vindo em direção à CPU,
+    // tenta antecipar sua posição.
+    if (ball.vx < 0) {
+        targetX = predictBallX(predictionTime);
+    } else {
+        // Se está se afastando, acompanha a posição atual.
+        targetX = ball.x;
+    }
 }
 
-// Impede a CPU de tentar atravessar a rede
+// Mantém a CPU dentro do próprio lado
 targetX = Math.max(
     net.x + net.width + cpu.radius,
     Math.min(
@@ -583,12 +587,12 @@ targetX = Math.max(
     )
 );
 
-// Movimento em direção ao alvo
-if (cpu.x < targetX - 10) {
+// Move a CPU em direção ao alvo
+if (cpu.x < targetX - 8) {
 
     cpu.vx = config.speed;
 
-} else if (cpu.x > targetX + 10) {
+} else if (cpu.x > targetX + 8) {
 
     cpu.vx = -config.speed;
 
@@ -596,26 +600,34 @@ if (cpu.x < targetX - 10) {
 
     cpu.vx = 0;
 }
+       
+// PULO DA CPU
+// -----------------------------------------------------
 
-        // Pulo da CPU
-        if (
-            ball.x > net.x + net.width &&
-            ball.x < 750 &&
-            ball.y < 350 &&
-            !cpu.jumping
-        ) {
+const distanceToBall = Math.abs(ball.x - cpu.x);
 
-            if (Math.random() < config.reaction) {
+const ballComingToCpu =
+    ball.x > net.x + net.width &&
+    ball.vx < 0;
 
-                cpu.vy = config.jumpPower;
-                cpu.jumping = true;
-            }
-        }
+const ballCloseEnough =
+    distanceToBall < 70;
 
-        cpu.x += cpu.vx;
+const ballAtJumpHeight =
+    ball.y < 300;
 
-        cpu.vy += 0.5;
-        cpu.y += cpu.vy;
+if (
+    ballComingToCpu &&
+    ballCloseEnough &&
+    ballAtJumpHeight &&
+    !cpu.jumping
+) {
+    if (Math.random() < config.reaction) {
+
+        cpu.vy = config.jumpPower;
+        cpu.jumping = true;
+    }
+}
 
         // Limites da CPU
         if (cpu.x - cpu.radius < net.x + net.width) {
