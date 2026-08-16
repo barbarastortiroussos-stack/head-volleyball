@@ -34,9 +34,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let playerScore = 0;
     let cpuScore = 0;
-    let particles = [];
+    let particles = []
     let pointMessage = "";
 let pointMessageTimer = 0;
+    const backgroundMusic = new Audio(
+    "assets/desifreemusic-copyright-free-background-music-407395.mp3"
+);
+
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.25;
+    
 
     // Quantidade de pontos necessária para vencer
     const WINNING_SCORE = 10;
@@ -472,23 +479,22 @@ pointMessageTimer = 0;
     // BOTÃO PLAY DO MENU INICIAL
     // =========================================================
 
-    if (startBtn) {
+ if (startBtn) {
 
-        startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', () => {
 
-            // Aplica opções escolhidas no menu
-            player.gender = genderSelect
-                ? genderSelect.value
-                : 'male';
+        // Aplica opções escolhidas no menu
+        player.gender = genderSelect
+            ? genderSelect.value
+            : 'male';
 
-            cpu.difficulty = difficultySelect
-                ? difficultySelect.value
-                : 'medium';
+        cpu.difficulty = difficultySelect
+            ? difficultySelect.value
+            : 'medium';
 
-            startNewMatch();
-        });
-    }
-
+        startNewMatch();
+    });
+}
     // =========================================================
     // LÓGICA DE ATUALIZAÇÃO
     // =========================================================
