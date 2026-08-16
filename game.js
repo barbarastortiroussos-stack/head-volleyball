@@ -538,10 +538,6 @@ function predictBallX(predictionTime) {
         // IA DA CPU
         // -----------------------------------------------------
 
-       // -----------------------------------------------------
-// IA DA CPU
-// -----------------------------------------------------
-
 // -----------------------------------------------------
 // IA DA CPU
 // -----------------------------------------------------
@@ -550,35 +546,44 @@ const config =
     difficultySettings[cpu.difficulty] ||
     difficultySettings.medium;
 
-// Quanto mais difícil, mais longe a CPU consegue prever
+// Quanto maior a dificuldade,
+// mais cedo a CPU tenta se posicionar.
 let predictionTime;
 
 if (cpu.difficulty === 'easy') {
-    predictionTime = 6;
+    predictionTime = 5;
 } else if (cpu.difficulty === 'medium') {
-    predictionTime = 10;
+    predictionTime = 8;
 } else {
-    predictionTime = 14;
+    predictionTime = 12;
 }
 
-// Posição padrão: centro do lado da CPU
+// Posição defensiva padrão
 let targetX = 650;
 
-// A CPU só precisa perseguir a bola quando ela
-// está no lado dela.
+// -----------------------------------------------------
+// POSICIONAMENTO
+// -----------------------------------------------------
+
+// Se a bola está no lado da CPU,
+// ela deve tentar acompanhá-la.
 if (ball.x > net.x + net.width) {
 
     // Se a bola está vindo em direção à CPU,
     // tenta antecipar sua posição.
     if (ball.vx < 0) {
+
         targetX = predictBallX(predictionTime);
+
     } else {
-        // Se está se afastando, acompanha a posição atual.
+
+        // Se a bola está se afastando,
+        // acompanha a posição atual dela.
         targetX = ball.x;
     }
 }
 
-// Mantém a CPU dentro do próprio lado
+// Mantém o alvo dentro do lado direito
 targetX = Math.max(
     net.x + net.width + cpu.radius,
     Math.min(
@@ -587,12 +592,18 @@ targetX = Math.max(
     )
 );
 
-// Move a CPU em direção ao alvo
-if (cpu.x < targetX - 8) {
+// -----------------------------------------------------
+// MOVIMENTO
+// -----------------------------------------------------
+
+const distanceToTarget = targetX - cpu.x;
+
+// Só para quando realmente estiver perto do alvo.
+if (distanceToTarget > 5) {
 
     cpu.vx = config.speed;
 
-} else if (cpu.x > targetX + 8) {
+} else if (distanceToTarget < -5) {
 
     cpu.vx = -config.speed;
 
@@ -600,35 +611,37 @@ if (cpu.x < targetX - 8) {
 
     cpu.vx = 0;
 }
-       
-// PULO DA CPU
+
+// -----------------------------------------------------
+// PULO
 // -----------------------------------------------------
 
 const distanceToBall = Math.abs(ball.x - cpu.x);
 
-const ballComingToCpu =
+const ballIsComing =
     ball.x > net.x + net.width &&
     ball.vx < 0;
 
-const ballCloseEnough =
-    distanceToBall < 70;
+const ballIsClose =
+    distanceToBall < 75;
 
-const ballAtJumpHeight =
-    ball.y < 300;
+const ballIsHighEnough =
+    ball.y < 330;
 
 if (
-    ballComingToCpu &&
-    ballCloseEnough &&
-    ballAtJumpHeight &&
+    ballIsComing &&
+    ballIsClose &&
+    ballIsHighEnough &&
     !cpu.jumping
 ) {
+
+    // Dificuldade controla a chance de reação.
     if (Math.random() < config.reaction) {
 
         cpu.vy = config.jumpPower;
         cpu.jumping = true;
     }
 }
-
         // Limites da CPU
         if (cpu.x - cpu.radius < net.x + net.width) {
 
