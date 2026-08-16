@@ -35,6 +35,8 @@ window.addEventListener('DOMContentLoaded', () => {
     let playerScore = 0;
     let cpuScore = 0;
     let particles = [];
+    let pointMessage = "";
+let pointMessageTimer = 0;
 
     // Quantidade de pontos necessária para vencer
     const WINNING_SCORE = 10;
@@ -505,6 +507,16 @@ function predictBallX(predictionTime) {
         });
     }
 }
+    function showPointMessage(winner) {
+
+    if (winner === "player") {
+        pointMessage = "+1 PLAYER!";
+    } else {
+        pointMessage = "CPU SCORES!";
+    }
+
+    pointMessageTimer = 60;
+}
     function update() {
 
         if (!gameRunning || isPaused || gameOver) {
@@ -550,13 +562,6 @@ function predictBallX(predictionTime) {
             player.jumping = false;
         }
 
-        // -----------------------------------------------------
-        // IA DA CPU
-        // -----------------------------------------------------
-
-// -----------------------------------------------------
-// IA DA CPU
-// -----------------------------------------------------
 
 // -----------------------------------------------------
 // IA DA CPU - PRIMEIRA VERSÃO ESTÁVEL
@@ -738,22 +743,19 @@ cpu.y += cpu.vy;
         // -----------------------------------------------------
         // VERIFICAÇÃO DE PONTO
         // -----------------------------------------------------
+if (ball.y + ball.radius >= groundY) {
 
-        if (ball.y + ball.radius >= groundY) {
+    if (ball.x < net.x + net.width / 2) {
 
-            if (ball.x < net.x + net.width / 2) {
+        scorePoint('cpu');
+        showPointMessage("cpu");
 
-                // Bola caiu no lado do jogador
-                // CPU ganha o ponto
-                scorePoint('cpu');
+    } else {
 
-            } else {
-
-                // Bola caiu no lado da CPU
-                // Jogador ganha o ponto
-                scorePoint('player');
-            }
+        scorePoint('player");
+        showPointMessage("player");
     }
+}
    // Atualiza as partículas
 for (let i = particles.length - 1; i >= 0; i--) {
 
@@ -767,6 +769,11 @@ for (let i = particles.length - 1; i >= 0; i--) {
     if (particle.life <= 0) {
         particles.splice(i, 1);
     }
+}
+
+        // Atualiza o feedback de ponto
+if (pointMessageTimer > 0) {
+    pointMessageTimer--;
 }
     }
 
@@ -1095,6 +1102,26 @@ for (const particle of particles) {
     );
 
     ctx.fill();
+}
+        // Feedback de ponto
+if (pointMessageTimer > 0) {
+
+    ctx.save();
+
+    ctx.textAlign = "center";
+    ctx.font = "bold 36px Arial";
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+    ctx.shadowBlur = 6;
+
+    ctx.fillText(
+        pointMessage,
+        canvas.width / 2,
+        100
+    );
+
+    ctx.restore();
 }
 
 // Restaura a transparência normal
