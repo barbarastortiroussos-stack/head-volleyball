@@ -542,48 +542,24 @@ function predictBallX(predictionTime) {
 // IA DA CPU
 // -----------------------------------------------------
 
+// -----------------------------------------------------
+// IA DA CPU - PRIMEIRA VERSÃO ESTÁVEL
+// -----------------------------------------------------
+
 const config =
     difficultySettings[cpu.difficulty] ||
     difficultySettings.medium;
 
-// Quanto maior a dificuldade,
-// mais cedo a CPU tenta se posicionar.
-let predictionTime;
-
-if (cpu.difficulty === 'easy') {
-    predictionTime = 5;
-} else if (cpu.difficulty === 'medium') {
-    predictionTime = 8;
-} else {
-    predictionTime = 12;
-}
-
-// Posição defensiva padrão
 let targetX = 650;
 
-// -----------------------------------------------------
-// POSICIONAMENTO
-// -----------------------------------------------------
-
-// Se a bola está no lado da CPU,
-// ela deve tentar acompanhá-la.
+// A bola está no lado da CPU?
 if (ball.x > net.x + net.width) {
 
-    // Se a bola está vindo em direção à CPU,
-    // tenta antecipar sua posição.
-    if (ball.vx < 0) {
-
-        targetX = predictBallX(predictionTime);
-
-    } else {
-
-        // Se a bola está se afastando,
-        // acompanha a posição atual dela.
-        targetX = ball.x;
-    }
+    // A CPU acompanha diretamente a bola.
+    targetX = ball.x;
 }
 
-// Mantém o alvo dentro do lado direito
+// Mantém a CPU dentro do próprio lado.
 targetX = Math.max(
     net.x + net.width + cpu.radius,
     Math.min(
@@ -592,13 +568,10 @@ targetX = Math.max(
     )
 );
 
-// -----------------------------------------------------
-// MOVIMENTO
-// -----------------------------------------------------
-
+// Distância entre a CPU e o alvo.
 const distanceToTarget = targetX - cpu.x;
 
-// Só para quando realmente estiver perto do alvo.
+// Movimento da CPU.
 if (distanceToTarget > 5) {
 
     cpu.vx = config.speed;
@@ -611,7 +584,6 @@ if (distanceToTarget > 5) {
 
     cpu.vx = 0;
 }
-
 // -----------------------------------------------------
 // PULO
 // -----------------------------------------------------
