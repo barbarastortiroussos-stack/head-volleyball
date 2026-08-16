@@ -312,6 +312,9 @@ let pointMessageTimer = 0;
 
         ball.vx = 0;
         ball.vy = 0;
+
+    pointMessage = "";
+pointMessageTimer = 0;
     }
 
     // =========================================================
@@ -752,7 +755,7 @@ if (ball.y + ball.radius >= groundY) {
 
     } else {
 
-        scorePoint('player");
+        scorePoint('player');
         showPointMessage("player");
     }
 }
