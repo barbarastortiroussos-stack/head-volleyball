@@ -614,6 +614,12 @@ if (
         cpu.jumping = true;
     }
 }
+        // Aplica o movimento da CPU
+cpu.x += cpu.vx;
+
+// Gravidade da CPU
+cpu.vy += 0.5;
+cpu.y += cpu.vy;
         // Limites da CPU
         if (cpu.x - cpu.radius < net.x + net.width) {
 
