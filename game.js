@@ -701,41 +701,92 @@ window.addEventListener('DOMContentLoaded', () => {
     // COLISÃO BOLA X FANTASMA
     // =========================================================
 
-    function checkBallCollision(entity) {
+  function checkBallCollision(entity) {
 
-        const dx = ball.x - entity.x;
-        const dy = ball.y - entity.y;
+    const dx = ball.x - entity.x;
+    const dy = ball.y - entity.y;
 
-        const distance = Math.hypot(dx, dy);
+    const distance = Math.hypot(dx, dy);
+    const minDistance = ball.radius + entity.radius;
 
-        if (distance < ball.radius + entity.radius) {
-
-            const angle = Math.atan2(dy, dx);
-
-            const power = 10;
-
-            ball.vx =
-                Math.cos(angle) *
-                power +
-                entity.vx * 0.5;
-
-            ball.vy =
-                Math.sin(angle) *
-                power +
-                entity.vy * 0.3;
-
-            // Evita a bola ficar presa no personagem
-            ball.x =
-                entity.x +
-                Math.cos(angle) *
-                (ball.radius + entity.radius + 2);
-
-            ball.y =
-                entity.y +
-                Math.sin(angle) *
-                (ball.radius + entity.radius + 2);
-        }
+    // Não houve colisão
+    if (distance >= minDistance) {
+        return;
     }
+
+    // Evita divisão por zero
+    if (distance === 0) {
+        return;
+    }
+
+    // Vetor normal da colisão
+    const nx = dx / distance;
+    const ny = dy / distance;
+
+    // =====================================================
+    // 1. AFASTA A BOLA DO FANTASMA
+    // =====================================================
+
+    const overlap = minDistance - distance;
+
+    ball.x += nx * overlap;
+    ball.y += ny * overlap;
+
+    // =====================================================
+    // 2. VELOCIDADE RELATIVA
+    // =====================================================
+
+    const relativeVx = ball.vx - entity.vx;
+    const relativeVy = ball.vy - entity.vy;
+
+    const relativeVelocity =
+        relativeVx * nx +
+        relativeVy * ny;
+
+    // Se a bola já está se afastando do jogador,
+    // não aplica outra rebatida.
+    if (relativeVelocity > 0) {
+        return;
+    }
+
+    // =====================================================
+    // 3. FORÇA DA REBATIDA
+    // =====================================================
+
+    const hitPower = 10;
+
+    // Reflexão da velocidade da bola
+    ball.vx -= 2 * relativeVelocity * nx;
+    ball.vy -= 2 * relativeVelocity * ny;
+
+    // Adiciona força própria do golpe
+    ball.vx += nx * hitPower;
+    ball.vy += ny * hitPower;
+
+    // =====================================================
+    // 4. INFLUÊNCIA DO MOVIMENTO DO JOGADOR
+    // =====================================================
+
+    ball.vx += entity.vx * 0.35;
+    ball.vy += entity.vy * 0.15;
+
+    // =====================================================
+    // 5. LIMITES DE VELOCIDADE
+    // =====================================================
+
+    const maxHorizontalSpeed = 14;
+    const maxVerticalSpeed = 16;
+
+    ball.vx = Math.max(
+        -maxHorizontalSpeed,
+        Math.min(maxHorizontalSpeed, ball.vx)
+    );
+
+    ball.vy = Math.max(
+        -maxVerticalSpeed,
+        Math.min(maxVerticalSpeed, ball.vy)
+    );
+}
 
     // =========================================================
     // RENDERIZAÇÃO
