@@ -175,60 +175,62 @@ button {
 </head>
 <body>
 
-    <div id="gameContainer">
-        <!-- O Canvas do Jogo -->
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+ <div id="gameContainer">
 
-        <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-<button id="pauseBtn">⏸</button>
-
-        <!-- Placar -->
-        <div id="ui">
-            Scoreboard: <span id="playerScore">0</span> x <span id="cpuScore">0</span>
-        </div>
-
-        <!-- Tela do Menu Inicial -->
-        <!-- Tela do Menu Inicial -->
-<div id="startScreen" class="overlay">
-    <h1>GHOST VOLLEYBALL</h1> 
-    
-    <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="medium" selected>Medium</option>
-        <option value="hard">Hard</option>
-    </select>
-
-    <button id="startBtn">PLAY</button>
-</div>
-
-        <!-- Tela de Pausa -->
-        <div id="pauseScreen" class="overlay hidden">
-            <h1>Paused</h1>
-            <p>Press 'P' or click below to continue</p>
-            <button id="resumeBtn">Continue</button>
-        </div>
-
-        <div id="gameOverScreen" class="overlay hidden">
-    <h1 id="gameOverTitle">YOU WIN!</h1>
-    <p id="finalScore">0 x 0</p>
-    <button id="playAgainBtn">PLAY AGAIN</button>
-</div>
-        
+    <!-- Placar -->
+    <div id="ui">
+        Scoreboard:
+        <span id="playerScore">0</span>
+        x
+        <span id="cpuScore">0</span>
     </div>
 
-    <!-- Controles de Toque para Celular -->
-    <div id="touchControls">
-        <div class="touch-group">
-            <button class="btn-touch" id="btnLeft">◄</button>
-            <button class="btn-touch" id="btnRight">►</button>
-        </div>
-        <div class="touch-group">
-            <button class="btn-touch" id="btnJump">▲</button>
-        </div>
-        <button id="pauseBtn">⏸</button>
+    <!-- Tela do Menu Inicial -->
+    <div id="startScreen" class="overlay">
+        <h1>GHOST VOLLEYBALL</h1>
+
+        <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+
+        <button id="startBtn">PLAY</button>
     </div>
 
+    <!-- Tela de Pausa -->
+    <div id="pauseScreen" class="overlay hidden">
+        <h1>Paused</h1>
+        <p>Press 'P' or click below to continue</p>
+        <button id="resumeBtn">Continue</button>
+    </div>
+
+    <!-- Tela de Game Over -->
+    <div id="gameOverScreen" class="overlay hidden">
+        <h1 id="gameOverTitle">YOU WIN!</h1>
+        <p id="finalScore">0 x 0</p>
+        <button id="playAgainBtn">PLAY AGAIN</button>
+    </div>
+
+</div>
+
+<!-- Controles de Toque -->
+<div id="touchControls">
+
+    <div class="touch-group">
+        <button class="btn-touch" id="btnLeft">◄</button>
+        <button class="btn-touch" id="btnRight">►</button>
+    </div>
+
+    <div class="touch-group">
+        <button class="btn-touch" id="btnJump">▲</button>
+    </div>
+
+    <button id="pauseBtn">⏸</button>
+
+</div>
     <script src="game.js"></script>
 
 </body>
