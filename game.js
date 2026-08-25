@@ -13,6 +13,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const resumeBtn = document.getElementById('resumeBtn');
     const playAgainBtn = document.getElementById('playAgainBtn');
     const pauseBtn = document.getElementById('pauseBtn');
+    const muteBtn = document.getElementById('muteBtn');
 
     const genderSelect = document.getElementById('gender');
     const difficultySelect = document.getElementById('difficulty');
@@ -44,7 +45,100 @@ let pointMessageTimer = 0;
 
 backgroundMusic.loop = true;
 backgroundMusic.volume = 0.25;
-    
+
+    // =========================================================
+    // ÁUDIO - EFEITOS SONOROS (sintetizados via Web Audio API)
+    // =========================================================
+
+    let isMuted = false;
+    let audioCtx = null;
+
+    function getAudioCtx() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                audioCtx = new AudioContextClass();
+            }
+        }
+        return audioCtx;
+    }
+
+    function playTone(frequency, duration, type = 'sine', volume = 0.2, delay = 0) {
+
+        if (isMuted) return;
+
+        const ac = getAudioCtx();
+        if (!ac) return;
+
+        const startTime = ac.currentTime + delay;
+
+        const oscillator = ac.createOscillator();
+        const gainNode = ac.createGain();
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+
+        gainNode.gain.setValueAtTime(volume, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ac.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+    }
+
+    function playJumpSound() {
+        playTone(440, 0.12, 'triangle', 0.15);
+    }
+
+    function playHitSound() {
+        playTone(220, 0.08, 'square', 0.18);
+    }
+
+    function playPointSound() {
+        playTone(660, 0.1, 'sine', 0.2);
+        playTone(880, 0.15, 'sine', 0.2, 0.1);
+    }
+
+    function playWinSound() {
+        playTone(523, 0.15, 'sine', 0.22, 0);
+        playTone(659, 0.15, 'sine', 0.22, 0.15);
+        playTone(784, 0.3, 'sine', 0.22, 0.3);
+    }
+
+    function playLoseSound() {
+        playTone(392, 0.2, 'sawtooth', 0.18, 0);
+        playTone(311, 0.3, 'sawtooth', 0.18, 0.2);
+    }
+
+    function updateMuteButton() {
+        if (muteBtn) {
+            muteBtn.textContent = isMuted ? '🔇' : '🔊';
+        }
+    }
+
+    function toggleMute() {
+
+        isMuted = !isMuted;
+
+        backgroundMusic.muted = isMuted;
+
+        updateMuteButton();
+    }
+
+    if (muteBtn) {
+        muteBtn.addEventListener('click', toggleMute);
+    }
+
+    function tryPlayMusic() {
+
+        if (isMuted) return;
+
+        // Alguns navegadores exigem interação do usuário antes do play().
+        // Como isso é chamado a partir de um clique, deve funcionar normalmente.
+        backgroundMusic.play().catch(() => {});
+    }
 
     // Quantidade de pontos necessária para vencer
     const WINNING_SCORE = 10;
@@ -155,6 +249,7 @@ backgroundMusic.volume = 0.25;
             ) {
                 player.vy = -12;
                 player.jumping = true;
+                playJumpSound();
             }
 
             keys.up = true;
@@ -233,6 +328,7 @@ backgroundMusic.volume = 0.25;
             ) {
                 player.vy = -12;
                 player.jumping = true;
+                playJumpSound();
             }
         };
 
@@ -282,6 +378,8 @@ backgroundMusic.volume = 0.25;
         if (gameOverScreen) {
             gameOverScreen.classList.add('hidden');
         }
+
+        tryPlayMusic();
 
         // Reinicia o saque
         resetServe('player');
@@ -342,10 +440,12 @@ pointMessageTimer = 0;
         if (isPaused) {
 
             pauseScreen.classList.remove('hidden');
+            backgroundMusic.pause();
 
         } else {
 
             pauseScreen.classList.add('hidden');
+            tryPlayMusic();
         }
     }
 
@@ -380,6 +480,8 @@ pointMessageTimer = 0;
         // Atualiza o texto do placar
         updateScoreboard();
 
+        backgroundMusic.pause();
+
         // Define a mensagem
         if (winner === 'player') {
 
@@ -387,11 +489,15 @@ pointMessageTimer = 0;
                 gameOverTitle.textContent = 'YOU WIN!';
             }
 
+            playWinSound();
+
         } else {
 
             if (gameOverTitle) {
                 gameOverTitle.textContent = 'CPU WINS!';
             }
+
+            playLoseSound();
         }
 
         // Mostra o placar final
@@ -762,11 +868,13 @@ if (ball.y + ball.radius >= groundY) {
 
         scorePoint('cpu');
         showPointMessage("cpu");
+        playPointSound();
 
     } else {
 
         scorePoint('player');
         showPointMessage("player");
+        playPointSound();
     }
 }
    // Atualiza as partículas
@@ -885,6 +993,9 @@ ball.vy += ny * hitPower * 0.45;
 
       // ✨ Efeito visual do impacto
     createHitParticles(ball.x, ball.y);
+
+    // 🔊 Efeito sonoro do impacto
+    playHitSound();
 }
 
     // =========================================================
@@ -1152,6 +1263,8 @@ ctx.globalAlpha = 1;
 
         requestAnimationFrame(gameLoop);
     }
+
+    updateMuteButton();
 
     // Inicia o jogo
     gameLoop();
