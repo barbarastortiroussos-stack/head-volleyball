@@ -118,6 +118,15 @@ backgroundMusic.volume = 0.25;
         });
     }
 
+    function playCountdownTick(isFinal) {
+
+        if (isFinal) {
+            playTone(880, 0.28, 'square', 0.25);
+        } else {
+            playTone(440, 0.15, 'square', 0.2);
+        }
+    }
+
     function updateMuteIcon() {
 
         if (!muteBtn) return;
@@ -140,6 +149,13 @@ backgroundMusic.volume = 0.25;
 
     // Quantidade de pontos necessária para vencer
     const WINNING_SCORE = 10;
+
+    // --- CONTAGEM REGRESSIVA ---
+    let isCountingDown = false;
+    let countdownIndex = 0;
+    let countdownTimer = 0;
+    const countdownSteps = ['3', '2', '1', 'GO!'];
+    const COUNTDOWN_STEP_FRAMES = 55;
 
     // --- CONFIGURAÇÃO DA REDE E CAMPO ---
     const groundY = 520;
@@ -367,6 +383,15 @@ backgroundMusic.volume = 0.25;
     // INICIAR NOVA PARTIDA
     // =========================================================
 
+    function startCountdown() {
+
+        isCountingDown = true;
+        countdownIndex = 0;
+        countdownTimer = COUNTDOWN_STEP_FRAMES;
+
+        playCountdownTick(false);
+    }
+
     function startNewMatch() {
 
         // Áudio só pode ser iniciado após um gesto do usuário (clique)
@@ -379,7 +404,7 @@ backgroundMusic.volume = 0.25;
         cpuScore = 0;
 
         gameOver = false;
-        gameRunning = true;
+        gameRunning = false;
         isPaused = false;
 
         updateScoreboard();
@@ -397,8 +422,9 @@ backgroundMusic.volume = 0.25;
             gameOverScreen.classList.add('hidden');
         }
 
-        // Reinicia o saque
+        // Reinicia o saque e começa a contagem regressiva
         resetServe('player');
+        startCountdown();
     }
 
     // =========================================================
@@ -666,9 +692,37 @@ function predictBallX(predictionTime) {
         }
     }
 
+    function updateCountdown() {
+
+        if (!isCountingDown) return;
+
+        countdownTimer--;
+
+        if (countdownTimer <= 0) {
+
+            countdownIndex++;
+
+            if (countdownIndex >= countdownSteps.length) {
+
+                isCountingDown = false;
+                gameRunning = true;
+
+            } else {
+
+                countdownTimer = COUNTDOWN_STEP_FRAMES;
+                playCountdownTick(countdownIndex === countdownSteps.length - 1);
+            }
+        }
+    }
+
     function update() {
 
         updateBackground();
+        updateCountdown();
+
+        if (isCountingDown) {
+            return;
+        }
 
         if (!gameRunning || isPaused || gameOver) {
             return;
@@ -1403,6 +1457,40 @@ if (pointMessageTimer > 0) {
 
 // Restaura a transparência normal
 ctx.globalAlpha = 1;
+
+        // -----------------------------------------------------
+        // CONTAGEM REGRESSIVA
+        // -----------------------------------------------------
+
+        if (isCountingDown) {
+
+            ctx.save();
+
+            // Escurece levemente a cena para dar destaque ao número
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const progress = 1 - (countdownTimer / COUNTDOWN_STEP_FRAMES);
+            const scale = 1.4 - progress * 0.4;
+
+            ctx.translate(canvas.width / 2, canvas.height / 2 - 30);
+            ctx.scale(scale, scale);
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 130px Arial';
+
+            ctx.fillStyle = countdownSteps[countdownIndex] === 'GO!'
+                ? '#2ECC40'
+                : '#FFFFFF';
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 12;
+
+            ctx.fillText(countdownSteps[countdownIndex], 0, 0);
+
+            ctx.restore();
+        }
     }
 
     // =========================================================
@@ -1420,3 +1508,4 @@ ctx.globalAlpha = 1;
     // Inicia o jogo
     gameLoop();
 });
+
