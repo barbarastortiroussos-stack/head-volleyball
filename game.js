@@ -47,97 +47,95 @@ backgroundMusic.loop = true;
 backgroundMusic.volume = 0.25;
 
     // =========================================================
-    // ÁUDIO - EFEITOS SONOROS (sintetizados via Web Audio API)
+    // SISTEMA DE SOM (efeitos gerados via Web Audio API)
     // =========================================================
 
-    let isMuted = false;
+    let soundEnabled = true;
     let audioCtx = null;
 
-    function getAudioCtx() {
-        if (!audioCtx) {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioContextClass) {
-                audioCtx = new AudioContextClass();
-            }
+    function initAudio() {
+
+        if (audioCtx) return;
+
+        const AudioContextClass =
+            window.AudioContext || window.webkitAudioContext;
+
+        if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
         }
-        return audioCtx;
     }
 
-    function playTone(frequency, duration, type = 'sine', volume = 0.2, delay = 0) {
+    function playTone(freq, duration, type = 'sine', volume = 0.2, delay = 0) {
 
-        if (isMuted) return;
+        if (!soundEnabled || !audioCtx) return;
 
-        const ac = getAudioCtx();
-        if (!ac) return;
+        const startTime = audioCtx.currentTime + delay;
 
-        const startTime = ac.currentTime + delay;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
 
-        const oscillator = ac.createOscillator();
-        const gainNode = ac.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
 
-        oscillator.type = type;
-        oscillator.frequency.setValueAtTime(frequency, startTime);
+        gain.gain.setValueAtTime(volume, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
-        gainNode.gain.setValueAtTime(volume, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
 
-        oscillator.connect(gainNode);
-        gainNode.connect(ac.destination);
-
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
     }
 
     function playJumpSound() {
-        playTone(440, 0.12, 'triangle', 0.15);
+        playTone(520, 0.12, 'square', 0.12);
     }
 
     function playHitSound() {
-        playTone(220, 0.08, 'square', 0.18);
+        playTone(220, 0.08, 'triangle', 0.22);
     }
 
-    function playPointSound() {
-        playTone(660, 0.1, 'sine', 0.2);
-        playTone(880, 0.15, 'sine', 0.2, 0.1);
+    function playPointSound(winner) {
+
+        if (winner === 'player') {
+            playTone(523, 0.12, 'sine', 0.2);
+            playTone(659, 0.15, 'sine', 0.2, 0.1);
+        } else {
+            playTone(300, 0.15, 'sawtooth', 0.15);
+            playTone(220, 0.2, 'sawtooth', 0.15, 0.1);
+        }
     }
 
     function playWinSound() {
-        playTone(523, 0.15, 'sine', 0.22, 0);
-        playTone(659, 0.15, 'sine', 0.22, 0.15);
-        playTone(784, 0.3, 'sine', 0.22, 0.3);
+        [523, 659, 784, 1046].forEach((freq, i) => {
+            playTone(freq, 0.2, 'sine', 0.22, i * 0.12);
+        });
     }
 
     function playLoseSound() {
-        playTone(392, 0.2, 'sawtooth', 0.18, 0);
-        playTone(311, 0.3, 'sawtooth', 0.18, 0.2);
+        [400, 320, 260, 180].forEach((freq, i) => {
+            playTone(freq, 0.25, 'sawtooth', 0.18, i * 0.12);
+        });
     }
 
-    function updateMuteButton() {
-        if (muteBtn) {
-            muteBtn.textContent = isMuted ? '🔇' : '🔊';
-        }
+    function updateMuteIcon() {
+
+        if (!muteBtn) return;
+
+        muteBtn.textContent = soundEnabled ? '🔊' : '🔇';
     }
 
     function toggleMute() {
 
-        isMuted = !isMuted;
+        soundEnabled = !soundEnabled;
 
-        backgroundMusic.muted = isMuted;
+        backgroundMusic.muted = !soundEnabled;
 
-        updateMuteButton();
+        updateMuteIcon();
     }
 
     if (muteBtn) {
         muteBtn.addEventListener('click', toggleMute);
-    }
-
-    function tryPlayMusic() {
-
-        if (isMuted) return;
-
-        // Alguns navegadores exigem interação do usuário antes do play().
-        // Como isso é chamado a partir de um clique, deve funcionar normalmente.
-        backgroundMusic.play().catch(() => {});
     }
 
     // Quantidade de pontos necessária para vencer
@@ -197,6 +195,20 @@ backgroundMusic.volume = 0.25;
         gravity: 0.35,
         bounce: 0.75
     };
+
+    // --- CENÁRIO DE FUNDO ---
+    const clouds = [
+        { x: 100, y: 70, scale: 1.0, speed: 0.12 },
+        { x: 320, y: 110, scale: 0.7, speed: 0.08 },
+        { x: 560, y: 60, scale: 1.2, speed: 0.15 },
+        { x: 700, y: 140, scale: 0.6, speed: 0.10 }
+    ];
+
+    const hills = [
+        { x: canvas.width * 0.18, radius: 130, color: '#7FBF7F' },
+        { x: canvas.width * 0.55, radius: 170, color: '#6FB56F' },
+        { x: canvas.width * 0.88, radius: 110, color: '#7FBF7F' }
+    ];
 
     // --- DIFICULDADES DA CPU ---
     const difficultySettings = {
@@ -357,6 +369,12 @@ backgroundMusic.volume = 0.25;
 
     function startNewMatch() {
 
+        // Áudio só pode ser iniciado após um gesto do usuário (clique)
+        initAudio();
+
+        backgroundMusic.currentTime = 0;
+        backgroundMusic.play().catch(() => {});
+
         playerScore = 0;
         cpuScore = 0;
 
@@ -378,8 +396,6 @@ backgroundMusic.volume = 0.25;
         if (gameOverScreen) {
             gameOverScreen.classList.add('hidden');
         }
-
-        tryPlayMusic();
 
         // Reinicia o saque
         resetServe('player');
@@ -445,7 +461,7 @@ pointMessageTimer = 0;
         } else {
 
             pauseScreen.classList.add('hidden');
-            tryPlayMusic();
+            backgroundMusic.play().catch(() => {});
         }
     }
 
@@ -477,10 +493,10 @@ pointMessageTimer = 0;
         cpu.vx = 0;
         cpu.vy = 0;
 
+        backgroundMusic.pause();
+
         // Atualiza o texto do placar
         updateScoreboard();
-
-        backgroundMusic.pause();
 
         // Define a mensagem
         if (winner === 'player') {
@@ -536,6 +552,7 @@ pointMessageTimer = 0;
         }
 
         updateScoreboard();
+        playPointSound(winner);
 
         // Verifica se alguém chegou aos 10 pontos
         if (playerScore >= WINNING_SCORE) {
@@ -636,7 +653,22 @@ function predictBallX(predictionTime) {
 
     pointMessageTimer = 60;
 }
+    function updateBackground() {
+
+        // As nuvens se movem sempre, até no menu, para dar vida à cena
+        for (const cloud of clouds) {
+
+            cloud.x += cloud.speed;
+
+            if (cloud.x - 60 > canvas.width) {
+                cloud.x = -60;
+            }
+        }
+    }
+
     function update() {
+
+        updateBackground();
 
         if (!gameRunning || isPaused || gameOver) {
             return;
@@ -868,13 +900,11 @@ if (ball.y + ball.radius >= groundY) {
 
         scorePoint('cpu');
         showPointMessage("cpu");
-        playPointSound();
 
     } else {
 
         scorePoint('player');
         showPointMessage("player");
-        playPointSound();
     }
 }
    // Atualiza as partículas
@@ -1002,6 +1032,37 @@ ball.vy += ny * hitPower * 0.45;
     // RENDERIZAÇÃO
     // =========================================================
 
+    function drawShadow(ghost) {
+
+        // Quanto mais alto o fantasma pula, menor e mais transparente a sombra
+        const heightAboveGround = Math.max(
+            0,
+            (groundY - ghost.radius) - ghost.y
+        );
+
+        const shrink = Math.min(0.6, heightAboveGround / 250);
+        const shadowWidth = ghost.radius * 1.6 * (1 - shrink);
+        const shadowAlpha = 0.35 * (1 - shrink * 0.8);
+
+        ctx.save();
+
+        ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+
+        ctx.beginPath();
+        ctx.ellipse(
+            ghost.x,
+            groundY + 4,
+            shadowWidth,
+            shadowWidth * 0.28,
+            0,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+
+        ctx.restore();
+    }
+
     function drawGhost(ghost, color) {
 
         ctx.save();
@@ -1120,8 +1181,64 @@ ball.vy += ny * hitPower * 0.45;
             canvas.height
         );
 
-        // Chão
-        ctx.fillStyle = '#E6C280';
+        // -----------------------------------------------------
+        // CÉU (gradiente do azul profundo ao horizonte claro)
+        // -----------------------------------------------------
+
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, groundY);
+        skyGradient.addColorStop(0, '#4FA8D8');
+        skyGradient.addColorStop(0.7, '#8FD0EA');
+        skyGradient.addColorStop(1, '#CFEFF5');
+
+        ctx.fillStyle = skyGradient;
+        ctx.fillRect(0, 0, canvas.width, groundY);
+
+        // Sol
+        ctx.save();
+        ctx.fillStyle = '#FFF3B0';
+        ctx.shadowColor = 'rgba(255, 240, 150, 0.9)';
+        ctx.shadowBlur = 40;
+        ctx.beginPath();
+        ctx.arc(canvas.width - 90, 80, 42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Colinas ao fundo
+        for (const hill of hills) {
+            ctx.fillStyle = hill.color;
+            ctx.beginPath();
+            ctx.arc(hill.x, groundY + 20, hill.radius, Math.PI, 0);
+            ctx.fill();
+        }
+
+        // Nuvens
+        for (const cloud of clouds) {
+
+            ctx.save();
+            ctx.translate(cloud.x, cloud.y);
+            ctx.scale(cloud.scale, cloud.scale);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 22, 0, Math.PI * 2);
+            ctx.arc(24, -10, 18, 0, Math.PI * 2);
+            ctx.arc(46, 0, 22, 0, Math.PI * 2);
+            ctx.arc(22, 12, 24, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // -----------------------------------------------------
+        // CHÃO (areia com textura)
+        // -----------------------------------------------------
+
+        const sandGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+        sandGradient.addColorStop(0, '#F0D9A0');
+        sandGradient.addColorStop(1, '#DFB877');
+
+        ctx.fillStyle = sandGradient;
 
         ctx.fillRect(
             0,
@@ -1129,6 +1246,17 @@ ball.vy += ny * hitPower * 0.45;
             canvas.width,
             canvas.height - groundY
         );
+
+        // Pontinhos de textura na areia
+        ctx.fillStyle = 'rgba(180, 140, 90, 0.35)';
+
+        for (let i = 0; i < 60; i++) {
+            const sx = (i * 53 + 17) % canvas.width;
+            const sy = groundY + ((i * 29) % (canvas.height - groundY));
+            ctx.beginPath();
+            ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         // Linha do chão
         ctx.strokeStyle = '#D0A050';
@@ -1148,7 +1276,15 @@ ball.vy += ny * hitPower * 0.45;
 
         ctx.stroke();
 
-        // Rede
+        // -----------------------------------------------------
+        // REDE (com postes)
+        // -----------------------------------------------------
+
+        // Postes
+        ctx.fillStyle = '#555555';
+        ctx.fillRect(net.x - 4, net.y - 10, 6, net.height + 10 + (canvas.height - (net.y + net.height)));
+        ctx.fillRect(net.x + net.width - 2, net.y - 10, 6, net.height + 10 + (canvas.height - (net.y + net.height)));
+
         ctx.fillStyle = '#FFFFFF';
 
         ctx.fillRect(
@@ -1157,6 +1293,16 @@ ball.vy += ny * hitPower * 0.45;
             net.width,
             net.height
         );
+
+        // Trama da rede
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.lineWidth = 1;
+        for (let i = net.y; i < net.y + net.height; i += 12) {
+            ctx.beginPath();
+            ctx.moveTo(net.x, i);
+            ctx.lineTo(net.x + net.width, i);
+            ctx.stroke();
+        }
 
         ctx.fillStyle = '#333333';
 
@@ -1167,6 +1313,13 @@ ball.vy += ny * hitPower * 0.45;
             canvas.height -
             (net.y + net.height)
         );
+
+        // -----------------------------------------------------
+        // SOMBRAS DOS FANTASMAS
+        // -----------------------------------------------------
+
+        drawShadow(player);
+        drawShadow(cpu);
 
         // Fantasmas
         drawGhost(
@@ -1263,8 +1416,6 @@ ctx.globalAlpha = 1;
 
         requestAnimationFrame(gameLoop);
     }
-
-    updateMuteButton();
 
     // Inicia o jogo
     gameLoop();
