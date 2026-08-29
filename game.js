@@ -5,7 +5,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- INTEGRACAO SDK Y8 ---
-    // Garante inicialização e registro de pontuação no Y8 Highscores
     function submitY8Score(score) {
         if (typeof ID !== 'undefined' && ID.GameAPI && ID.GameAPI.Leaderboards) {
             ID.GameAPI.Leaderboards.save({
@@ -182,8 +181,7 @@ window.addEventListener('DOMContentLoaded', () => {
         vx: 0,
         vy: 0,
         jumping: false,
-        color: '#FFFFFF',
-        hairColor: '#000000',
+        color: '#00F5D4', // Turquesa Bunny Studio
         gender: 'male'
     };
 
@@ -196,7 +194,7 @@ window.addEventListener('DOMContentLoaded', () => {
         vx: 0,
         vy: 0,
         jumping: false,
-        color: '#FF6B6B',
+        color: '#E60067', // Magenta Bunny Studio
         difficulty: 'medium'
     };
 
@@ -221,9 +219,9 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
 
     const hills = [
-        { x: canvas.width * 0.18, radius: 130, color: '#7FBF7F' },
-        { x: canvas.width * 0.55, radius: 170, color: '#6FB56F' },
-        { x: canvas.width * 0.88, radius: 110, color: '#7FBF7F' }
+        { x: canvas.width * 0.18, radius: 130, color: '#2A3A2B' }, // Verde Oliva
+        { x: canvas.width * 0.55, radius: 170, color: '#1E2B1E' }, // Verde Oliva Escuro
+        { x: canvas.width * 0.88, radius: 110, color: '#2A3A2B' }
     ];
 
     // --- DIFICULDADES DA CPU ---
@@ -399,7 +397,6 @@ window.addEventListener('DOMContentLoaded', () => {
         backgroundMusic.pause();
         updateScoreboard();
 
-        // Envia a pontuação para a tabela de líderes da Y8
         submitY8Score(playerScore);
 
         if (winner === 'player') {
@@ -702,7 +699,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    // RENDERIZAÇÃO
+    // RENDERIZAÇÃO E DESENHO
     // =========================================================
 
     function drawShadow(ghost) {
@@ -744,14 +741,14 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#0D0D0D';
         ctx.beginPath();
         ctx.arc(-10, -5, 4, 0, Math.PI * 2);
         ctx.arc(10, -5, 4, 0, Math.PI * 2);
         ctx.fill();
 
         if (ghost.gender === 'female') {
-            ctx.fillStyle = '#FF4136';
+            ctx.fillStyle = '#E60067';
             ctx.beginPath();
             ctx.arc(-12, -ghost.radius + 5, 6, 0, Math.PI * 2);
             ctx.arc(-4, -ghost.radius + 5, 6, 0, Math.PI * 2);
@@ -766,15 +763,16 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.translate(ball.x, ball.y);
         ctx.rotate(ball.rotation);
 
-        ctx.fillStyle = '#FFDC00';
+        // Corpo da bola em Turquesa com linhas em Vinho Escuro
+        ctx.fillStyle = '#00F5D4';
         ctx.beginPath();
         ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#333';
+        ctx.strokeStyle = '#2B0B14';
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        ctx.strokeStyle = '#0074D9';
+        ctx.strokeStyle = '#6B0F24';
         ctx.lineWidth = 2;
 
         ctx.beginPath();
@@ -791,7 +789,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function drawParticles() {
         ctx.save();
         for (const p of particles) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.life / 20})`;
+            ctx.fillStyle = `rgba(0, 245, 212, ${p.life / 20})`; // Partículas Turquesa
             ctx.beginPath();
             ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
             ctx.fill();
@@ -802,26 +800,26 @@ window.addEventListener('DOMContentLoaded', () => {
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Céu
+        // Céu Noturno / Místico
         const skyGradient = ctx.createLinearGradient(0, 0, 0, groundY);
-        skyGradient.addColorStop(0, '#4FA8D8');
-        skyGradient.addColorStop(0.7, '#8FD0EA');
-        skyGradient.addColorStop(1, '#CFEFF5');
+        skyGradient.addColorStop(0, '#0B132B');   // Azul Marinho Profundo
+        skyGradient.addColorStop(0.7, '#1A0814'); // Transição para Vinho
+        skyGradient.addColorStop(1, '#2B0B14');   // Vinho Escuro na linha do horizonte
 
         ctx.fillStyle = skyGradient;
         ctx.fillRect(0, 0, canvas.width, groundY);
 
-        // Sol
+        // Lua de Sangue (Inspirada na Logo)
         ctx.save();
-        ctx.fillStyle = '#FFF3B0';
-        ctx.shadowColor = 'rgba(255, 240, 150, 0.9)';
-        ctx.shadowBlur = 40;
+        ctx.fillStyle = '#6B0F24';
+        ctx.shadowColor = 'rgba(230, 0, 103, 0.4)';
+        ctx.shadowBlur = 30;
         ctx.beginPath();
-        ctx.arc(canvas.width - 90, 80, 42, 0, Math.PI * 2);
+        ctx.arc(canvas.width - 120, 90, 48, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
-        // Colinas
+        // Colinas Verde Oliva
         for (const hill of hills) {
             ctx.fillStyle = hill.color;
             ctx.beginPath();
@@ -829,12 +827,12 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.fill();
         }
 
-        // Nuvens
+        // Nuvens Noturnas / Translúcidas
         for (const cloud of clouds) {
             ctx.save();
             ctx.translate(cloud.x, cloud.y);
             ctx.scale(cloud.scale, cloud.scale);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
             ctx.beginPath();
             ctx.arc(0, 0, 22, 0, Math.PI * 2);
             ctx.arc(24, -10, 18, 0, Math.PI * 2);
@@ -844,47 +842,29 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.restore();
         }
 
-        // Chão
-        const sandGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
-        sandGradient.addColorStop(0, '#F0D9A0');
-        sandGradient.addColorStop(1, '#DFB877');
+        // Chão Sóbrio
+        const groundGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+        groundGradient.addColorStop(0, '#151B26');
+        groundGradient.addColorStop(1, '#0D1117');
 
-        ctx.fillStyle = sandGradient;
+        ctx.fillStyle = groundGradient;
         ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-        // Textura do Chão
-        ctx.fillStyle = 'rgba(180, 140, 90, 0.35)';
-        for (let i = 0; i < 60; i++) {
-            const sx = (i * 53 + 17) % canvas.width;
-            const sy = groundY + ((i * 29) % (canvas.height - groundY));
-            ctx.beginPath();
-            ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.strokeStyle = '#D0A050';
-        ctx.lineWidth = 4;
+        // Linha do Chão em Turquesa
+        ctx.strokeStyle = '#00F5D4';
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(0, groundY);
         ctx.lineTo(canvas.width, groundY);
         ctx.stroke();
 
         // Rede
-        ctx.fillStyle = '#555555';
+        ctx.fillStyle = '#3B4A3E'; // Suporte Verde Oliva
         ctx.fillRect(net.x - 4, net.y - 10, 6, net.height + 10 + (canvas.height - (net.y + net.height)));
         ctx.fillRect(net.x + net.width - 2, net.y - 10, 6, net.height + 10 + (canvas.height - (net.y + net.height)));
 
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(net.x, net.y, net.width, net.height);
-
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.lineWidth = 1;
-        for (let y = net.y; y <= net.y + net.height; y += 12) {
-            ctx.beginPath();
-            ctx.moveTo(net.x, y);
-            ctx.lineTo(net.x + net.width, y);
-            ctx.stroke();
-        }
 
         // Sombras e Fantasmas
         drawShadow(player);
@@ -900,7 +880,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (pointMessageTimer > 0) {
             ctx.save();
             ctx.font = 'bold 32px sans-serif';
-            ctx.fillStyle = pointMessage.includes('PLAYER') ? '#2ECC40' : '#FF4136';
+            ctx.fillStyle = pointMessage.includes('PLAYER') ? '#00F5D4' : '#E60067';
             ctx.textAlign = 'center';
             ctx.fillText(pointMessage, canvas.width / 2, 180);
             ctx.restore();
@@ -909,8 +889,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if (isCountingDown) {
             ctx.save();
             ctx.font = 'bold 72px sans-serif';
-            ctx.fillStyle = '#FFFFFF';
-            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#00F5D4';
+            ctx.strokeStyle = '#0D0D0D';
             ctx.lineWidth = 4;
             ctx.textAlign = 'center';
 
