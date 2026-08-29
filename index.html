@@ -29,22 +29,23 @@
             overflow: hidden;
         }
 
-        /* CONTAINER PRINCIPAL */
-        #gameContainer {
-            position: relative;
-            width: 800px;
-            height: 600px;
-            box-shadow: 0 0 25px rgba(0, 245, 212, 0.15);
-            border-radius: 12px;
-            overflow: hidden;
-            background: #0B132B;
-        }
+    #gameContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    max-width: 800px;
+    max-height: 600px;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-        #gameCanvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
 
         /* PLACAR */
         #scoreBoard {
