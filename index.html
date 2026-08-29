@@ -260,7 +260,36 @@ button {
     <button id="pauseBtn">⏸</button>
 
 </div>
+    <!-- 1. Seu jogo -->
     <script src="game.js"></script>
 
+    <!-- 2. SDK da Y8 -->
+    <script src="https://cdn.y8.com/minimal-sdk/2-0/y8.min.js" async></script>
+    <script>
+      let y8Sdk;
+
+      window.addEventListener("y8sdk.ready", function () {
+        y8Sdk = y8.sdk();
+
+        const appConfig = {
+          appId: '6a92db5947c2deccad109854',
+          autoLogin: true
+        };
+
+        const adConfig = {
+          gameId: '281721',
+          preloadAdBreaks: 'on',
+          sound: 'on',
+          onReady: () => {}
+        };
+
+        y8Sdk.init(appConfig, adConfig);
+        y8Sdk.onAuth((user, error) => {});
+      }, { once: true });
+
+      if (window.y8 && window.y8.emitReadyEvent) {
+        window.y8.emitReadyEvent();
+      }
+    </script>
 </body>
 </html>
