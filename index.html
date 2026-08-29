@@ -1,295 +1,272 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Ghost Volleyball</title>
+
+    <!-- SDK da Y8 Games (Opcional, mas necessário para Leaderboards/Highscores) -->
+    <script src="https://a.y8.com/api/js/v2/y8.js"></script>
+
     <style>
-        body { 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            background-color: #1a1a1a; 
-            color: white; 
-            font-family: Arial, sans-serif; 
+        /* RESET BÁSICO */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Container que segura o Canvas e os Menus centralizados */
+        body {
+            background-color: #0D0D0D;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* CONTAINER PRINCIPAL */
         #gameContainer {
             position: relative;
             width: 800px;
             height: 600px;
+            box-shadow: 0 0 25px rgba(0, 245, 212, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #0B132B;
         }
 
-        canvas { 
-            border: 4px solid #fff; 
-            background-color: #4FA8D8; /* Fallback antes do 1º frame */
+        #gameCanvas {
             display: block;
+            width: 100%;
+            height: 100%;
         }
 
-        /* Placar no topo */
-        #ui { 
-            position: absolute; 
-            top: 15px; 
-            width: 100%; 
-            text-align: center; 
-            font-size: 20px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            pointer-events: none;
-        }
-
-        /* Botão de mudo */
-        #muteBtn {
+        /* PLACAR */
+        #scoreBoard {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            background-color: rgba(0, 0, 0, 0.4);
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00F5D4;
+            text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
             z-index: 5;
         }
 
-        /* Estilo para Telas/Overlays (Menu e Pausa) */
+        /* CONTROLES DO CABEÇALHO */
+        #topControls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 5;
+        }
+
+        .icon-btn {
+            background: rgba(43, 11, 20, 0.7);
+            border: 1px solid #6B0F24;
+            color: #FFFFFF;
+            font-size: 1.2rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: #6B0F24;
+        }
+
+        /* TELAS DE OVERLAY (START, PAUSE, GAME OVER) */
         .overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
+            background: rgba(13, 13, 13, 0.88);
+            backdrop-filter: blur(4px);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 15px;
-            border: 4px solid #fff;
-            box-sizing: border-box;
+            gap: 20px;
+            z-index: 10;
+            transition: opacity 0.3s ease;
         }
 
-        .overlay h1 {
-            font-size: 36px;
-            margin-bottom: 10px;
-            color: #FFDC00;
-        }
-
-        .overlay label {
-            font-size: 18px;
-        }
-
-        .overlay select, .overlay button {
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .overlay button {
-            background-color: #2ECC40;
-            color: white;
-            font-weight: bold;
-            font-size: 20px;
-            margin-top: 10px;
-            transition: 0.2s;
-        }
-
-        .overlay button:hover {
-            background-color: #01FF70;
-            color: black;
-            transform: scale(1.05);
-        }
-
-        /* Classe para esconder elementos facilmente */
         .hidden {
             display: none !important;
         }
 
-        /* Controles Touch para Mobile */
+        h1 {
+            font-size: 2.8rem;
+            color: #00F5D4;
+            text-shadow: 0 0 15px rgba(0, 245, 212, 0.4);
+            letter-spacing: 2px;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            color: #E60067;
+            text-shadow: 0 0 10px rgba(230, 0, 103, 0.4);
+        }
+
+        .menu-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 220px;
+        }
+
+        .menu-group label {
+            font-size: 0.9rem;
+            color: #A0A0A0;
+        }
+
+        select {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #6B0F24;
+            background: #2B0B14;
+            color: #FFF;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #0D0D0D;
+            background: #00F5D4;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 245, 212, 0.4);
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .btn:hover {
+            background: #00d6b9;
+            transform: scale(1.03);
+        }
+
+        /* CONTROLES TOUCH MÓVEIS */
         #touchControls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            padding: 0 20px;
             display: flex;
             justify-content: space-between;
-            width: 800px;
-            margin-top: 15px;
+            pointer-events: none;
+            z-index: 5;
         }
 
-        .touch-group {
+        .touch-left-group, .touch-right-group {
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            pointer-events: auto;
         }
 
-        .btn-touch {
-            width: 70px;
-            height: 70px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border: 2px solid #fff;
+        .touch-btn {
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
+            background: rgba(43, 11, 20, 0.6);
+            border: 1px solid rgba(0, 245, 212, 0.3);
             color: white;
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 1.4rem;
             display: flex;
             justify-content: center;
             align-items: center;
             touch-action: manipulation;
         }
 
-        .btn-touch:active {
-            background-color: rgba(255, 255, 255, 0.5);
+        /* Oculta os botões em telas grandes (PCs/Notebooks) */
+        @media (min-width: 801px) {
+            #touchControls {
+                display: none;
+            }
         }
-        /* Ajuste automático para telas pequenas (Celular) */
-@media (max-width: 820px) {
-    #gameContainer {
-        width: 95vw;
-        height: calc(95vw * 0.75); /* Mantém a proporção 4:3 do Canvas (800x600) */
-    }
-
-    canvas {
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    #touchControls {
-        width: 95vw;
-        margin-top: 10px;
-    }
-
-    .btn-touch {
-        width: 60px;
-        height: 60px;
-        font-size: 20px;
-    }
-}
-        /* Impede zoom duplo toque e seleções no mobile */
-body,
-.btn-touch,
-button {
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-/* Tela de resultado */
-#gameOverTitle {
-    font-size: 42px;
-    margin-bottom: 5px;
-}
-
-#finalScore {
-    font-size: 28px;
-    font-weight: bold;
-}
     </style>
 </head>
 <body>
 
- <div id="gameContainer">
+    <div id="gameContainer">
+        <!-- Canvas onde o jogo é renderizado (800x600) -->
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <!-- Placar do Jogo -->
+        <div id="scoreBoard">
+            <span id="playerScore">0</span> : <span id="cpuScore">0</span>
+        </div>
 
-    <!-- Placar -->
-    <div id="ui">
-        Scoreboard:
-        <span id="playerScore">0</span>
-        x
-        <span id="cpuScore">0</span>
+        <!-- Botões do Cabeçalho (Pausa e Mute) -->
+        <div id="topControls">
+            <button id="pauseBtn" class="icon-btn">⏸️</button>
+            <button id="muteBtn" class="icon-btn">🔊</button>
+        </div>
+
+        <!-- Tela Inicial / Menu Start -->
+        <div id="startScreen" class="overlay">
+            <h1>GHOST VOLLEYBALL</h1>
+            
+            <div class="menu-group">
+                <label for="gender">Gênero:</label>
+                <select id="gender">
+                    <option value="male">Masculino</option>
+                    <option value="female">Feminino</option>
+                </select>
+            </div>
+
+            <div class="menu-group">
+                <label for="difficulty">Dificuldade:</label>
+                <select id="difficulty">
+                    <option value="easy">Fácil</option>
+                    <option value="medium" selected>Médio</option>
+                    <option value="hard">Difícil</option>
+                </select>
+            </div>
+
+            <button id="startBtn" class="btn">JOGAR</button>
+        </div>
+
+        <!-- Tela de Pausa -->
+        <div id="pauseScreen" class="overlay hidden">
+            <h2>JOGO PAUSADO</h2>
+            <button id="resumeBtn" class="btn">CONTINUAR</button>
+        </div>
+
+        <!-- Tela de Game Over -->
+        <div id="gameOverScreen" class="overlay hidden">
+            <h2 id="gameOverTitle">YOU WIN!</h2>
+            <p>Placar Final: <span id="finalScore">0 x 0</span></p>
+            <button id="playAgainBtn" class="btn">JOGAR NOVAMENTE</button>
+        </div>
+
+        <!-- Controles Touch para Dispositivos Móveis -->
+        <div id="touchControls">
+            <div class="touch-left-group">
+                <button id="btnLeft" class="touch-btn">⬅️</button>
+                <button id="btnRight" class="touch-btn">➡️</button>
+            </div>
+            <div class="touch-right-group">
+                <button id="btnJump" class="touch-btn">⬆️</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Botão de mudo -->
-    <button id="muteBtn" title="Mute/Unmute">🔊</button>
-
-    <!-- Tela do Menu Inicial -->
-    <div id="startScreen" class="overlay">
-        <h1>GHOST VOLLEYBALL</h1>
-
-        <label for="gender">Character:</label>
-        <select id="gender">
-            <option value="male" selected>Male Ghost</option>
-            <option value="female">Female Ghost</option>
-        </select>
-
-        <label for="difficulty">Difficulty:</label>
-        <select id="difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium" selected>Medium</option>
-            <option value="hard">Hard</option>
-        </select>
-
-        <button id="startBtn">PLAY</button>
-    </div>
-
-    <!-- Tela de Pausa -->
-    <div id="pauseScreen" class="overlay hidden">
-        <h1>Paused</h1>
-        <p>Press 'P' or click below to continue</p>
-        <button id="resumeBtn">Continue</button>
-    </div>
-
-    <!-- Tela de Game Over -->
-    <div id="gameOverScreen" class="overlay hidden">
-        <h1 id="gameOverTitle">YOU WIN!</h1>
-        <p id="finalScore">0 x 0</p>
-        <button id="playAgainBtn">PLAY AGAIN</button>
-    </div>
-
-</div>
-
-<!-- Controles de Toque -->
-<div id="touchControls">
-
-    <div class="touch-group">
-        <button class="btn-touch" id="btnLeft">◄</button>
-        <button class="btn-touch" id="btnRight">►</button>
-    </div>
-
-    <div class="touch-group">
-        <button class="btn-touch" id="btnJump">▲</button>
-    </div>
-
-    <button id="pauseBtn">⏸</button>
-
-</div>
-    <!-- 1. Seu jogo -->
+    <!-- Importação do arquivo de lógica do jogo -->
     <script src="game.js"></script>
-
-    <!-- 2. SDK da Y8 -->
-    <script src="https://cdn.y8.com/minimal-sdk/2-0/y8.min.js" async></script>
-    <script>
-      let y8Sdk;
-
-      window.addEventListener("y8sdk.ready", function () {
-        y8Sdk = y8.sdk();
-
-        const appConfig = {
-          appId: '6a92db5947c2deccad109854',
-          autoLogin: true
-        };
-
-        const adConfig = {
-          gameId: '281721',
-          preloadAdBreaks: 'on',
-          sound: 'on',
-          onReady: () => {}
-        };
-
-        y8Sdk.init(appConfig, adConfig);
-        y8Sdk.onAuth((user, error) => {});
-      }, { once: true });
-
-      if (window.y8 && window.y8.emitReadyEvent) {
-        window.y8.emitReadyEvent();
-      }
-    </script>
 </body>
 </html>
