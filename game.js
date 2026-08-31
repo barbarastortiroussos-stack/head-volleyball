@@ -4,7 +4,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const ctx = canvas.getContext('2d');
 
-    // --- INTEGRACAO SDK Y8 ---
+    // --- INTEGRACAO SDK Y8 (Leaderboards & Ads) ---
     function submitY8Score(score) {
         if (typeof ID !== 'undefined' && ID.GameAPI && ID.GameAPI.Leaderboards) {
             ID.GameAPI.Leaderboards.save({
@@ -13,6 +13,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }, function(response) {
                 console.log('Pontuação enviada para o Y8:', response);
             });
+        }
+    }
+
+    function showY8Ad(callback) {
+        if (typeof ID !== 'undefined' && ID.GameAPI && ID.GameAPI.Ads) {
+            ID.GameAPI.Ads.show();
+            // O SDK do Y8 geralmente gerencia o encerramento, mas chamamos o callback logo em seguida ou tratamos se houver evento
+            if (callback) callback();
+        } else {
+            if (callback) callback();
         }
     }
 
@@ -401,7 +411,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
 
     // =========================================================
-    // FINAL DA PARTIDA + SDK Y8 SUBMIT
+    // FINAL DA PARTIDA + SDK Y8 SUBMIT & ADS
     // =========================================================
 
     function endMatch(winner) {
@@ -421,7 +431,9 @@ window.addEventListener('DOMContentLoaded', () => {
         backgroundMusic.pause();
         updateScoreboard();
 
+        // Envia pontuação e exibe anúncio intersticial do Y8
         submitY8Score(playerScore);
+        showY8Ad();
 
         if (winner === 'player') {
             if (gameOverTitle) gameOverTitle.textContent = 'YOU WIN!';
