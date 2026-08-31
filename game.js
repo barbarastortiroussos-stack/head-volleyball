@@ -40,6 +40,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const btnLeft = document.getElementById('btnLeft');
     const btnRight = document.getElementById('btnRight');
     const btnJump = document.getElementById('btnJump');
+    
+    // Tela Cheia
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const gameContainer = document.getElementById('gameContainer');
 
     // --- ESTADOS DO JOGO ---
     let gameRunning = false;
@@ -51,6 +55,26 @@ window.addEventListener('DOMContentLoaded', () => {
     let particles = [];
     let pointMessage = "";
     let pointMessageTimer = 0;
+
+    if (fullscreenBtn && gameContainer) {
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                if (gameContainer.requestFullscreen) {
+                    gameContainer.requestFullscreen();
+                } else if (gameContainer.webkitRequestFullscreen) { // Safari
+                    gameContainer.webkitRequestFullscreen();
+                }
+                fullscreenBtn.textContent = '✕'; 
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                fullscreenBtn.textContent = '⛶';
+            }
+        });
+    }
 
     const backgroundMusic = new Audio(
         "assets/desifreemusic-copyright-free-background-music-407395.mp3"
@@ -181,7 +205,7 @@ window.addEventListener('DOMContentLoaded', () => {
         vx: 0,
         vy: 0,
         jumping: false,
-        color: '#00F5D4', // Turquesa Bunny Studio
+        color: '#00F5D4',
         gender: 'male'
     };
 
@@ -194,7 +218,7 @@ window.addEventListener('DOMContentLoaded', () => {
         vx: 0,
         vy: 0,
         jumping: false,
-        color: '#E60067', // Magenta Bunny Studio
+        color: '#E60067',
         difficulty: 'medium'
     };
 
@@ -219,8 +243,8 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
 
     const hills = [
-        { x: canvas.width * 0.18, radius: 130, color: '#2A3A2B' }, // Verde Oliva
-        { x: canvas.width * 0.55, radius: 170, color: '#1E2B1E' }, // Verde Oliva Escuro
+        { x: canvas.width * 0.18, radius: 130, color: '#2A3A2B' },
+        { x: canvas.width * 0.55, radius: 170, color: '#1E2B1E' },
         { x: canvas.width * 0.88, radius: 110, color: '#2A3A2B' }
     ];
 
@@ -516,7 +540,6 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Movimento do jogador
         if (keys.left) {
             player.vx = -player.speed;
         } else if (keys.right) {
@@ -538,7 +561,6 @@ window.addEventListener('DOMContentLoaded', () => {
             player.jumping = false;
         }
 
-        // IA da CPU
         const config = difficultySettings[cpu.difficulty] || difficultySettings.medium;
         let targetX = 650;
 
@@ -590,13 +612,11 @@ window.addEventListener('DOMContentLoaded', () => {
             cpu.jumping = false;
         }
 
-        // Física da Bola
         ball.vy += ball.gravity;
         ball.x += ball.vx;
         ball.y += ball.vy;
         ball.rotation += ball.vx * 0.05;
 
-        // Paredes
         if (ball.x - ball.radius < 0) {
             ball.x = ball.radius;
             ball.vx *= -ball.bounce;
@@ -607,13 +627,11 @@ window.addEventListener('DOMContentLoaded', () => {
             ball.vx *= -ball.bounce;
         }
 
-        // Teto
         if (ball.y - ball.radius < 0) {
             ball.y = ball.radius;
             ball.vy *= -1;
         }
 
-        // Colisão com a Rede
         if (ball.x + ball.radius > net.x && ball.x - ball.radius < net.x + net.width) {
             if (ball.y + ball.radius > net.y) {
                 if (ball.x < net.x + net.width / 2) {
@@ -626,11 +644,9 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Colisão Bola vs Jogadores
         checkBallCollision(player);
         checkBallCollision(cpu);
 
-        // Pontuação
         if (ball.y + ball.radius >= groundY) {
             if (ball.x < net.x + net.width / 2) {
                 scorePoint('cpu');
@@ -641,7 +657,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Partículas
         for (let i = particles.length - 1; i >= 0; i--) {
             const particle = particles[i];
             particle.x += particle.vx;
@@ -763,7 +778,6 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.translate(ball.x, ball.y);
         ctx.rotate(ball.rotation);
 
-        // Corpo da bola em Turquesa com linhas em Vinho Escuro
         ctx.fillStyle = '#00F5D4';
         ctx.beginPath();
         ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
@@ -789,7 +803,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function drawParticles() {
         ctx.save();
         for (const p of particles) {
-            ctx.fillStyle = `rgba(0, 245, 212, ${p.life / 20})`; // Partículas Turquesa
+            ctx.fillStyle = `rgba(0, 245, 212, ${p.life / 20})`;
             ctx.beginPath();
             ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
             ctx.fill();
@@ -800,16 +814,14 @@ window.addEventListener('DOMContentLoaded', () => {
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Céu Noturno / Místico
         const skyGradient = ctx.createLinearGradient(0, 0, 0, groundY);
-        skyGradient.addColorStop(0, '#0B132B');   // Azul Marinho Profundo
-        skyGradient.addColorStop(0.7, '#1A0814'); // Transição para Vinho
-        skyGradient.addColorStop(1, '#2B0B14');   // Vinho Escuro na linha do horizonte
+        skyGradient.addColorStop(0, '#0B132B');
+        skyGradient.addColorStop(0.7, '#1A0814');
+        skyGradient.addColorStop(1, '#2B0B14');
 
         ctx.fillStyle = skyGradient;
         ctx.fillRect(0, 0, canvas.width, groundY);
 
-        // Lua de Sangue (Inspirada na Logo)
         ctx.save();
         ctx.fillStyle = '#6B0F24';
         ctx.shadowColor = 'rgba(230, 0, 103, 0.4)';
@@ -819,7 +831,6 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fill();
         ctx.restore();
 
-        // Colinas Verde Oliva
         for (const hill of hills) {
             ctx.fillStyle = hill.color;
             ctx.beginPath();
@@ -827,7 +838,6 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.fill();
         }
 
-        // Nuvens Noturnas / Translúcidas
         for (const cloud of clouds) {
             ctx.save();
             ctx.translate(cloud.x, cloud.y);
@@ -842,7 +852,6 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.restore();
         }
 
-        // Chão Sóbrio
         const groundGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
         groundGradient.addColorStop(0, '#151B26');
         groundGradient.addColorStop(1, '#0D1117');
@@ -850,7 +859,6 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = groundGradient;
         ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-        // Linha do Chão em Turquesa
         ctx.strokeStyle = '#00F5D4';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -858,15 +866,13 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.lineTo(canvas.width, groundY);
         ctx.stroke();
 
-        // Rede
-        ctx.fillStyle = '#3B4A3E'; // Suporte Verde Oliva
+        ctx.fillStyle = '#3B4A3E';
         ctx.fillRect(net.x - 4, net.y - 10, 6, net.height + 10 + (canvas.height - (net.y + net.height)));
         ctx.fillRect(net.x + net.width - 2, net.y - 10, 6, net.height + 10 + (canvas.height - (net.y + net.height)));
 
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(net.x, net.y, net.width, net.height);
 
-        // Sombras e Fantasmas
         drawShadow(player);
         drawShadow(cpu);
 
@@ -876,7 +882,6 @@ window.addEventListener('DOMContentLoaded', () => {
         drawBall();
         drawParticles();
 
-        // Mensagens e Contagem
         if (pointMessageTimer > 0) {
             ctx.save();
             ctx.font = 'bold 32px sans-serif';
